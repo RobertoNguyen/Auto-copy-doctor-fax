@@ -48,8 +48,9 @@ def main():
     elif arg1 == 'list':
         list_data()
         main()
-    #elif arg == 'add':
-        # TODO
+    elif arg == 'add':
+        add_entry()
+        #TODO mass add
     #elif arg == 'edit':
         # TODO
     elif lastN != None:             # <lastN>
@@ -59,7 +60,7 @@ def main():
         main()
 
 
-def lookup(lastN, firstN=None):
+def lookup(lastN, firstN=None, add=False):
     #logging.disable(logging.DEBUG)
 
     result_counter, search_counter = 0, 0
@@ -67,7 +68,7 @@ def lookup(lastN, firstN=None):
     search_results = {}    
 
     # Iterate through each listed index of the data (doctors key). Filters last names             
-    for letter in sorted_data:                   # gets entire alphabet lettered dictionary: {"a": vals}
+    for letter in sorted_data:                  # gets entire alphabet lettered dictionary: {"a": vals}
         if lastN[0] in letter:                  # gets list of key entries for letter: [{LIST}, {OF}, {VALUES}]
             for doctor in letter[lastN[0]]:     # single entry. {'last': name, 'first': name, 'fax': ##########}
                 if lastN in doctor["last"]:
@@ -80,10 +81,13 @@ def lookup(lastN, firstN=None):
             if firstN in temp_dict[i]["first"]:
                 search_counter += 1
                 search_results[search_counter] = temp_dict[i]
-        if search_counter == 0:     # No search results
-            display_results(search_counter, '%s, %s' % (lastN, firstN))
+        if add:
+            return search_results
         else:
-            display_results(search_counter, search_results)
+            if search_counter == 0:     # No search results
+                display_results(search_counter, '%s, %s' % (lastN, firstN))
+            else:
+                display_results(search_counter, search_results)
 
     # <lastN>
     if result_counter == 0:         # No search results
@@ -223,6 +227,72 @@ def sort_drs(dictionary, first_name=False):
             pass
 
 
+def add_entry(last=None, first=None, fax=None):
+
+    def add_person():
+        lists.append(entry_dict)
+        print("Added person: %s, %s %s" % (last, first, fax))
+
+    entry_dict, letter_dict = {}, {}
+    entry_list = []
+    seenLetter = False
+
+    if last == None and first == None and fax == None:
+        print("\nIf first or last name has 2 parts, make it into 1. e.g. Del Rio = Delrio")
+        last = input("Enter last name:")
+        first = input("Enter first name:")
+        fax = input("Enter fax number:")
+
+    entry_dict["last"] = last
+    entry_dict["first"] = first
+    entry_dict["fax"] = fax
+
+    newletter = str(last[0])
+    entry_list.append(entry_dict)
+    letter_dict[newletter] = entry_list
+
+    result_list = lookup(last, first, True)
+
+    try:
+        for index in range(len(sorted_data)):
+            for letters, lists in sorted_data[index].items():
+                if newletter == letters:  # last[0] == letters
+                    seenLetter = True
+
+                    if not result_list:
+                        add_person()
+                        save()
+                        break
+                    elif result_list:
+                        for val in result_list.values():
+                            if (last != val["last"] or last == val["last"]) and first != val["first"]:
+                                add_person()
+                                save()
+                                break
+
+                    for listed in result_list.values():  # uses lookup function to check if last, first exists
+                        if last == listed["last"] and first == listed["first"] and fax == listed["fax"]:
+                            print("Person already exists: %s, %s %s" % (last, first, fax))
+                            break
+                        elif last == listed["last"] and first == listed["first"]:
+                            print("Person exists but different fax number")
+                            #TODO 0. exit 1. overwrite fax num 2. add anyway
+                            break
+                elif not seenLetter and index == len(sorted_data) - 1:  # last[0] does not exist & reached end of index
+                    sorted_data.append(letter_dict)
+                    save()
+                    break
+        main()
+    except TypeError:
+        pass
+
+def save():
+    with open('sortedfaxnum.txt', "w") as q:
+        q.write('{"doctors":\n')
+        json.dump(sorted_data, q, indent=4)
+        q.write('}')
+
+
 if __name__ == "__main__":
     # gets current working directory then splits it into a list for data extraction
     listPath = os.getcwd().split(os.path.sep)
@@ -237,10 +307,13 @@ if __name__ == "__main__":
         q.close()
         f = open("faxnum.txt", "w")
         f.close()
+
     with open('faxnum.txt') as f:
         data = json.load(f)
         sorted_data = data["doctors"]
+
     sorted_data = sort_alphabet(sorted_data)
+
     for length in range(len(sorted_data)):
         unsorted_drs = sort_alphabet(sorted_data[length])  # "a": [{'last':},..]
         for keys, values in unsorted_drs.items():
