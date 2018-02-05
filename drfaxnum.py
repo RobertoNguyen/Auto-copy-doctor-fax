@@ -286,6 +286,8 @@ def add_entry(last=None, first=None, fax=None):
     except TypeError:
         pass
 
+
+# Saves all data to this file
 def save():
     with open('sortedfaxnum.txt', "w") as q:
         q.write('{"doctors":\n')
@@ -294,13 +296,19 @@ def save():
 
 
 if __name__ == "__main__":
-    # gets current working directory then splits it into a list for data extraction
-    listPath = os.getcwd().split(os.path.sep)
-    # this is the new path we'll save the data file under. C:\Users\USERNAME\Desktop
-    newPath = r'C:\Users\%s\Desktop' % str(listPath[2])
-    os.chdir(newPath)
+
+    if sys.platform == 'darwin':        # If Mac OS 'Darwin'
+        print(True)
+    elif sys.platform == 'win32':       # If Windows
+        print("Not Darwin")
+        # gets current working directory then splits it into a list for data extraction
+        # this is the new path we'll save the data file under. C:\Users\USERNAME\Desktop
+        listPath = os.getcwd().split(os.path.sep)
+        newPath = r'C:\Users\%s\Desktop' % str(listPath[2])
+        os.chdir(newPath)
 
     if os.path.exists('./faxnum.txt') or os.path.exists('./sortedfaxnum.txt'):
+        #print(os.getcwd())
         pass
     else:
         q = open("sortedfaxnum.txt", "w")
@@ -320,9 +328,6 @@ if __name__ == "__main__":
             sorted_drs = sort_drs(values)
             sorted_data[length][keys] = sorted_drs
 
-    with open('sortedfaxnum.txt', "w") as q:
-        q.write('{"doctors":\n')
-        json.dump(sorted_data, q, indent=4)
-        q.write('}')
+    save()
 
     main()
