@@ -12,51 +12,95 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def main():
-    arg = input('"[Last]" or "[Last], [First]" to search. "Help" to display commands: ').lower()
+    arg = input('\n"[Last]" or "[Last], [First]" to search. "Help" to display commands: ').lower()
 
-    # regex to check for lastN with/without firstN
-    nameSearch = re.compile(r'''
-                            ([a-zA-Z]+)     # Checks first name
-                            (,\s | ,)?      # Checks for comma
-                            ([a-zA-Z]+)?    # Checks for last name
-                           ''', re.VERBOSE | re.IGNORECASE)
+    # regex to check for <commands> <arg(s)> or <last> +/- <first> name searches
+    command_regex = re.compile(r'''
+                                (\s*[a-zA-Z]+)          # group(1)  <commands>          or      <lastN>
+                                ((\s*) (,)? (\s*))?     
+                                ([a-zA-Z]+)?            # group(6)  <lastN>             or      <firstN>
+                                ((\s*) (,)? (\s*))?
+                                ([a-zA-Z]+)?            # group(11) <firstN> or None      
+                                ((\s*) (,)? (\s*))?
+
+                                ( \( )?
+                                (\d{3})?                # group(17) <###>
+                                ( \) )?
+                                (\s | - | \.)?
+                                (\d{3})?                # group(20) <###>
+                                (\s | - | \.)?
+                                (\d{4})?                # group(22) <####>
+                               ''', re.VERBOSE | re.IGNORECASE)
+
+    phone_regex = re.compile(r'''
+                              ( \( )?
+                              (\d{3})?                # group(2) <###>
+                              ( \) )?
+                              (\s | - | \. | \\ | //)?
+                              (\d{3})?                # group(5)
+                              (\s | - | \. | \\ | //)?
+                              (\d{4})?                # group(7)
+                             ''', re.VERBOSE)
+
     try:
-        lastN = nameSearch.search(arg).group(1)    # lastN
-        firstN = nameSearch.search(arg).group(3)    # firstN, letter
-    except AttributeError:
+        command = command_regex.match(arg).group(1).strip(' ')  # <command> <firstN> <lastN2> <fax>
+        lastN = command_regex.search(arg).group(1)  # <lastN> <firstN>
+        firstN = command_regex.search(arg).group(6)
+        lastN2 = command_regex.search(arg).group(11)
+        areacode = command_regex.search(arg).group(17)
+        phone1 = command_regex.search(arg).group(20)
+        phone2 = command_regex.search(arg).group(22)
+
+        fax = None
+
+        if areacode and phone1 and phone2:
+            fax = areacode + phone1 + phone2
+            #print(command, firstN, lastN2, fax)
+
+        # if re.search(command, 'add, edit, del, list'):
+        if command == 'help':
+            print('\n---------COMMAND----------------------------------DESCRIPTION------------------')
+            print('1. LIST                                  lists ALL entries')
+            print('2. ADD  <LASTNAME, FIRSTNAME, FAX#>      to add entry LASTN/FIRSTN/FAX#')
+            print('3. EDIT <LAST NAME/PARTS OF LAST NAME>   to edit entry LASTN/FIRSTN/FAX#\n\n')
+            main()
+        elif command == 'add':
+            # TODO FIX SO CANT ADD 2: LCHC NONE <fax> or etc.
+
+            if firstN and fax:
+                add_entry(firstN, lastN2, fax)
+            else:  # if not lastN and not firstN and not fax:
+                print("\nIf first or last name has 2 parts, make it into 1. e.g. Del Rio = Delrio")
+                last = input("Enter last name:")
+                first = input("Enter first name:")
+                fax = input("Enter fax number [Must have 10 digits]:")
+
+                areacode = phone_regex.search(fax).group(2)
+                phone1 = phone_regex.search(fax).group(5)
+                phone2 = phone_regex.search(fax).group(7)
+
+                if areacode and phone1 and phone2:
+                    fax = areacode + phone1 + phone2
+                else:
+                    fax = input("Try again [Must have 10 digits]:")
+                while len(fax) == 10:
+                    add_entry(last, first, fax)
+
+        elif command == 'edit':
+            print("True: %s. Use <command> to map to functions" % command)
+
+        elif command == 'del':
+            print("True: %s. Use <command> to map to functions" % command)
+
+        elif command == 'list':
+            list_data()
+
+        elif lastN != None:
+            print("Performing lookup")
+            lookup(lastN, firstN)
+        main()
+    except (AttributeError, IndexError, TypeError):
         print('Invalid command, try again\n')
-        main()
-    
-    # regex to check for <list>, <edit> or <add>
-    commandSearch = re.compile(r'''
-                               (edit)
-                               \s*([a-zA-Z]+)?
-                              ''', re.VERBOSE)
-    
-    try:
-        arg1 = nameSearch.search(arg).group(1)        #
-        arg2 = commandSearch.search(arg).group(2)     #
-    except (AttributeError, UnboundLocalError):
-        pass
-
-    if arg == 'help':
-        print('\n---------COMMAND----------------------------------DESCRIPTION------------------')
-        print('1. LIST                                  lists ALL entries')
-        print('2. ADD  <LASTNAME, FIRSTNAME, FAX#>      to add entry LASTN/FIRSTN/FAX#')
-        print('3. EDIT <LAST NAME/PARTS OF LAST NAME>   to edit entry LASTN/FIRSTN/FAX#\n\n')
-        main()
-    elif arg1 == 'list':
-        list_data()
-        main()
-    elif arg == 'add':
-        add_entry()
-        #TODO mass add
-    #elif arg == 'edit':
-        # TODO
-    elif lastN != None:             # <lastN>
-        lookup(lastN, firstN)       # <lastN, firstN>
-    else:
-        print('Invalid command, try again')
         main()
 
 
@@ -82,12 +126,18 @@ def lookup(lastN, firstN=None, add=False):
                 search_counter += 1
                 search_results[search_counter] = temp_dict[i]
         if add:
+            print(search_results)
             return search_results
         else:
             if search_counter == 0:     # No search results
                 display_results(search_counter, '%s, %s' % (lastN, firstN))
             else:
                 display_results(search_counter, search_results)
+
+    if add and not firstN:
+        return temp_dict
+    else:
+        return search_results
 
     # <lastN>
     if result_counter == 0:         # No search results
@@ -102,14 +152,15 @@ def display_results(result_counter, temp_dict):
     if result_counter == 0:
         print('No results found for: %s \n' % temp_dict)
     elif result_counter == 1:
-        result = '{:>5}, {:>5} {:>13}'.format(temp_dict[1]["last"], temp_dict[1]["first"], temp_dict[1]["fax"])
+        result = '{:>5}, {:>5} {:>13}'.format(temp_dict[1]["last"], temp_dict[1]["first"], temp_dict[1]["fax"]).upper()
         pyperclip.copy(temp_dict[1]["fax"])
+        print('Found %s result' % result_counter)
         print('Copied fax number for: %s \n' % result)
     elif result_counter > 1:
         print('LAST'.center(12, '-'), 'FIRST'.center(11, '-'), 'FAX'.center(12, '-'))
         
         for i in range(1, result_counter+1):
-            result = '{} {:>10} {:>10} {:>13}'.format(i, temp_dict[i]["last"], temp_dict[i]["first"], temp_dict[i]["fax"])
+            result = '{} {:>10} {:>10} {:>13}'.format(i, temp_dict[i]["last"], temp_dict[i]["first"], temp_dict[i]["fax"]).upper()
             print(result)
         print('Found %d results\n' % result_counter)
 
@@ -119,7 +170,7 @@ def display_results(result_counter, temp_dict):
                                       .format('1', result_counter)))
                 if result_counter >= num_input and num_input >= 1:
                     result = '{:>5}, {:>5} {:>13}'\
-                        .format(temp_dict[num_input]["last"], temp_dict[num_input]["first"], temp_dict[num_input]["fax"])
+                        .format(temp_dict[num_input]["last"], temp_dict[num_input]["first"], temp_dict[num_input]["fax"]).upper()
                     pyperclip.copy(temp_dict[num_input]["fax"])
                     print('Copied fax number for: %s \n' % result)
                     main()
@@ -146,10 +197,10 @@ def list_data():
                 temp_dict[result_counter] = dr[index]
                 if result_counter < 10:
                     entry = '{:>2} {:>10} {:>10} {:>13}'\
-                        .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"])
+                        .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"]).upper()
                 else:
                     entry = '{} {:>10} {:>10} {:>13}'\
-                        .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"])
+                        .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"]).upper()
                 print(entry)
             print()
 
@@ -229,19 +280,18 @@ def sort_drs(dictionary, first_name=False):
 
 def add_entry(last=None, first=None, fax=None):
 
+    if first == None:
+        first = ""
+    else:
+        first.upper()
+
     def add_person():
         lists.append(entry_dict)
-        print("Added person: %s, %s %s" % (last, first, fax))
+        print("Added person: %s, %s %s" % (last.upper(), first, fax))
 
     entry_dict, letter_dict = {}, {}
     entry_list = []
     seenLetter = False
-
-    if last == None and first == None and fax == None:
-        print("\nIf first or last name has 2 parts, make it into 1. e.g. Del Rio = Delrio")
-        last = input("Enter last name:")
-        first = input("Enter first name:")
-        fax = input("Enter fax number:")
 
     entry_dict["last"] = last
     entry_dict["first"] = first
@@ -260,12 +310,14 @@ def add_entry(last=None, first=None, fax=None):
                     seenLetter = True
 
                     if not result_list:
+                        print("1 adding")
                         add_person()
                         save()
                         break
                     elif result_list:
                         for val in result_list.values():
                             if (last != val["last"] or last == val["last"]) and first != val["first"]:
+                                print("2 adding")
                                 add_person()
                                 save()
                                 break
@@ -275,11 +327,16 @@ def add_entry(last=None, first=None, fax=None):
                             print("Person already exists: %s, %s %s" % (last, first, fax))
                             break
                         elif last == listed["last"] and first == listed["first"]:
+                            for val in result_list.values():
+                                if last == val["last"] and first == val["first"] and fax != val["fax"]:
+                                    print("%s, [NO_FIRST_NAME] %s Exists with different phone number" % (val["last"], val["fax"]))
                             print("Person exists but different fax number")
                             #TODO 0. exit 1. overwrite fax num 2. add anyway
                             break
                 elif not seenLetter and index == len(sorted_data) - 1:  # last[0] does not exist & reached end of index
                     sorted_data.append(letter_dict)
+                    if first != None: first = first.upper()
+                    print("Added person: %s, %s %s" % (last.upper(), first, fax))
                     save()
                     break
         main()
