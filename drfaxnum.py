@@ -6,6 +6,7 @@ import sys
 import re
 import pyperclip
 import logging
+import getpass
 
 logging.basicConfig(level=logging.DEBUG)
 #logging.disable(logging.DEBUG)
@@ -55,7 +56,6 @@ def main():
 
         if areacode and phone1 and phone2:
             fax = areacode + phone1 + phone2
-            #print(command, firstN, lastN2, fax)
 
         # if re.search(command, 'add, edit, del, list'):
         if command == 'help':
@@ -66,6 +66,7 @@ def main():
             main()
         elif command == 'add':
             # TODO FIX SO CANT ADD 2: LCHC NONE <fax> or etc.
+            # TODO FIX SORTING ISSUE WITH '' or ' '
 
             if firstN and fax:
                 if lastN2 == None:
@@ -77,7 +78,6 @@ def main():
 
                 add_entry(firstN, lastN2, fax)
             else:  # if not lastN and not firstN and not fax:
-                # TODO REMOVE WHITESPACE after/before INPUTS
 
                 print("\nIf first or last name has 2 parts, make it into 1. e.g. Del Rio = Delrio")
                 last = input("Enter last name:").lower().strip(' ')
@@ -199,6 +199,8 @@ def display_results(result_counter, temp_dict):
 
 # Lists all doctors
 def list_data():
+    global sorted_data
+    sorted_data = sort_alphabet(sorted_data)
 
     temp_dict = {}
     result_counter = 0      # resets counter if already been used before in other functions
@@ -303,6 +305,15 @@ def add_entry(last=None, first=None, fax=None):
     entry_list = []
     seenLetter = False
 
+    if first == None or first == '':
+        first = ''
+    else:
+        first.upper()
+
+    #TODO FIX REGEX ISSUE-----------------
+    if len(fax) == 10:
+        fax = '1' + fax
+
     entry_dict["last"] = last
     entry_dict["first"] = first
     entry_dict["fax"] = fax
@@ -313,11 +324,6 @@ def add_entry(last=None, first=None, fax=None):
 
     result_list = lookup(last, first, True)
 
-    if first == None:
-        first = ''
-    else:
-        first.upper()
-
     try:
         for index in range(len(sorted_data)):
             for letters, lists in sorted_data[index].items():
@@ -326,6 +332,8 @@ def add_entry(last=None, first=None, fax=None):
 
                     for keys, listed in result_list.items():  # uses lookup function to check if last, first exists
                         if last == listed["last"] and first == listed["first"] and fax == listed["fax"]:
+                            print(fax)
+                            print(listed["fax"])
                             print("Person already exists: %s, %s %s" % (last, first, fax))
                             break
                         elif last == listed["last"] and first == listed["first"] and fax != listed[
@@ -339,6 +347,7 @@ def add_entry(last=None, first=None, fax=None):
                             elif decision == 1:
                                 print("2 adding")
                                 add_person()
+                                print(lists)
                                 save(sorted_data)
                                 main()
                             elif decision == 2:
@@ -451,10 +460,14 @@ if __name__ == "__main__":
     elif sys.platform == 'win32':       # If Windows
         # gets current working directory then splits it into a list for data extraction
         # this is the new path we'll save the data file under. C:\Users\USERNAME\Desktop
-        print("Not Darwin")
         listPath = os.getcwd().split(os.path.sep)
-        newPath = r'C:\Users\%s\Desktop' % str(listPath[2])
-        os.chdir(newPath)
+        if str(listPath[0]) != 'C':
+            #os.chdir(r'C:\Users\Robert\Desktop')
+            os.chdir(r'C:\Users\%s\Desktop' % getpass.getuser())
+        else:
+            #newPath = r'C:\Users\%s\Desktop' % str(listPath[2])
+            newPath = r'C:\Users\%s\Desktop' % getpass.getuser()
+            os.chdir(newPath)
 
     if os.path.exists('./faxnum.txt') or os.path.exists('./sortedfaxnum.txt'):
         pass
@@ -468,7 +481,6 @@ if __name__ == "__main__":
         data = json.load(f)
         sorted_data = data["doctors"]
         sorted_data = sort_alphabet(sorted_data)
-        f.close()
 
     for length in range(len(sorted_data)):
         unsorted_drs = sort_alphabet(sorted_data[length])  # "a": [{'last':},..]
