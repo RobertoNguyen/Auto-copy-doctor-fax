@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def main():
-    arg = input('\n"[Last]" or "[Last], [First]" to search. "Help" to display commands: ').lower()
+    arg = input('\n"LAST" or "LAST FIRST" to search. "Help" to display commands: ').lower()
 
     # regex to check for <commands> <arg(s)> or <last> +/- <first> name searches
     command_regex = re.compile(r'''
@@ -44,7 +44,7 @@ def main():
 
     try:
         command = command_regex.match(arg).group(1).strip(' ')  # <command> <firstN> <lastN2> <fax>
-        lastN = command_regex.search(arg).group(1)  # <lastN> <firstN>
+        lastN = command_regex.search(arg).group(1)              # <lastN> <firstN>
         firstN = command_regex.search(arg).group(6)
         lastN2 = command_regex.search(arg).group(11)
         areacode = command_regex.search(arg).group(17)
@@ -68,12 +68,26 @@ def main():
             # TODO FIX SO CANT ADD 2: LCHC NONE <fax> or etc.
 
             if firstN and fax:
+                if lastN2 == None:
+                    lastN2 = ''
+                else:
+                    lastN2 = lastN2.lower()
+
+                firstN = firstN.lower()
+
                 add_entry(firstN, lastN2, fax)
             else:  # if not lastN and not firstN and not fax:
+                # TODO REMOVE WHITESPACE after/before INPUTS
+
                 print("\nIf first or last name has 2 parts, make it into 1. e.g. Del Rio = Delrio")
-                last = input("Enter last name:")
-                first = input("Enter first name:")
+                last = input("Enter last name:").lower().strip(' ')
+                first = input("Enter first name:").strip(' ')
                 fax = input("Enter fax number [Must have 10 digits]:")
+
+                if first == None or first == '':
+                    pass
+                else:
+                    first = first.lower()
 
                 areacode = phone_regex.search(fax).group(2)
                 phone1 = phone_regex.search(fax).group(5)
@@ -83,6 +97,7 @@ def main():
                     fax = areacode + phone1 + phone2
                 else:
                     fax = input("Try again [Must have 10 digits]:")
+
                 while len(fax) == 10:
                     add_entry(last, first, fax)
 
@@ -136,7 +151,7 @@ def lookup(lastN, firstN=None, add=False):
 
     if add and not firstN:
         return temp_dict
-    else:
+    elif add:
         return search_results
 
     # <lastN>
@@ -280,11 +295,6 @@ def sort_drs(dictionary, first_name=False):
 
 def add_entry(last=None, first=None, fax=None):
 
-    if first == None:
-        first = ""
-    else:
-        first.upper()
-
     def add_person():
         lists.append(entry_dict)
         print("Added person: %s, %s %s" % (last.upper(), first, fax))
@@ -303,41 +313,57 @@ def add_entry(last=None, first=None, fax=None):
 
     result_list = lookup(last, first, True)
 
+    if first == None:
+        first = ''
+    else:
+        first.upper()
+
     try:
         for index in range(len(sorted_data)):
             for letters, lists in sorted_data[index].items():
                 if newletter == letters:  # last[0] == letters
                     seenLetter = True
 
+                    for keys, listed in result_list.items():  # uses lookup function to check if last, first exists
+                        if last == listed["last"] and first == listed["first"] and fax == listed["fax"]:
+                            print("Person already exists: %s, %s %s" % (last, first, fax))
+                            break
+                        elif last == listed["last"] and first == listed["first"] and fax != listed[
+                            "fax"] and keys == len(result_list):
+                            decision = int(input(
+                                "A different fax # exists for the same person. Enter a number: \n0. Main menu "
+                                "\n1. Add new person \n2. Replace with new fax # \n3. Edit entry \n4. Delete entry"))
+
+                            if decision == 0:
+                                main()
+                            elif decision == 1:
+                                print("2 adding")
+                                add_person()
+                                save(sorted_data)
+                                main()
+                            elif decision == 2:
+                                newfax = input('Enter a new fax number:')
+                                # fax = newfax
+                            break
+
                     if not result_list:
                         print("1 adding")
                         add_person()
-                        save()
+                        save(sorted_data)
                         break
                     elif result_list:
                         for val in result_list.values():
                             if (last != val["last"] or last == val["last"]) and first != val["first"]:
-                                print("2 adding")
+                                print("3 adding")
                                 add_person()
-                                save()
+                                save(sorted_data)
                                 break
 
-                    for listed in result_list.values():  # uses lookup function to check if last, first exists
-                        if last == listed["last"] and first == listed["first"] and fax == listed["fax"]:
-                            print("Person already exists: %s, %s %s" % (last, first, fax))
-                            break
-                        elif last == listed["last"] and first == listed["first"]:
-                            for val in result_list.values():
-                                if last == val["last"] and first == val["first"] and fax != val["fax"]:
-                                    print("%s, [NO_FIRST_NAME] %s Exists with different phone number" % (val["last"], val["fax"]))
-                            print("Person exists but different fax number")
-                            #TODO 0. exit 1. overwrite fax num 2. add anyway
-                            break
                 elif not seenLetter and index == len(sorted_data) - 1:  # last[0] does not exist & reached end of index
                     sorted_data.append(letter_dict)
                     if first != None: first = first.upper()
                     print("Added person: %s, %s %s" % (last.upper(), first, fax))
-                    save()
+                    save(sorted_data)
                     break
         main()
     except TypeError:
@@ -345,27 +371,33 @@ def add_entry(last=None, first=None, fax=None):
 
 
 # Saves all data to this file
-def save():
-    with open('sortedfaxnum.txt', "w") as q:
+def save(newdata):
+
+    for length in range(len(newdata)):
+        unsorted_drs = sort_alphabet(newdata[length])  # "a": [{'last':},..]
+        for keys, values in unsorted_drs.items():
+            sorted_drs = sort_drs(values)
+            newdata[length][keys] = sorted_drs
+
+    with open('faxnum.txt', "w") as q:
         q.write('{"doctors":\n')
-        json.dump(sorted_data, q, indent=4)
+        json.dump(newdata, q, indent=4)
         q.write('}')
 
 
 if __name__ == "__main__":
 
     if sys.platform == 'darwin':        # If Mac OS 'Darwin'
-        print(True)
+        pass
     elif sys.platform == 'win32':       # If Windows
-        print("Not Darwin")
         # gets current working directory then splits it into a list for data extraction
         # this is the new path we'll save the data file under. C:\Users\USERNAME\Desktop
+        print("Not Darwin")
         listPath = os.getcwd().split(os.path.sep)
         newPath = r'C:\Users\%s\Desktop' % str(listPath[2])
         os.chdir(newPath)
 
     if os.path.exists('./faxnum.txt') or os.path.exists('./sortedfaxnum.txt'):
-        #print(os.getcwd())
         pass
     else:
         q = open("sortedfaxnum.txt", "w")
@@ -376,8 +408,8 @@ if __name__ == "__main__":
     with open('faxnum.txt') as f:
         data = json.load(f)
         sorted_data = data["doctors"]
-
-    sorted_data = sort_alphabet(sorted_data)
+        sorted_data = sort_alphabet(sorted_data)
+        f.close()
 
     for length in range(len(sorted_data)):
         unsorted_drs = sort_alphabet(sorted_data[length])  # "a": [{'last':},..]
@@ -385,6 +417,9 @@ if __name__ == "__main__":
             sorted_drs = sort_drs(values)
             sorted_data[length][keys] = sorted_drs
 
-    save()
+    with open('faxnum123.txt', "w") as p:
+        p.write('{"doctors":\n')
+        json.dump(sorted_data, p, indent=4)
+        p.write('}')
 
     main()
