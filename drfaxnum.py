@@ -105,7 +105,7 @@ def main():
             print("True: %s. Use <command> to map to functions" % command)
 
         elif command == 'del':
-            print("True: %s. Use <command> to map to functions" % command)
+            delete_entry(firstN, lastN2)
 
         elif command == 'list':
             list_data()
@@ -368,6 +368,65 @@ def add_entry(last=None, first=None, fax=None):
         main()
     except TypeError:
         pass
+
+
+def delete_entry(last, first=None, fax=None):
+    letter_index, entry_index = 0, 0
+    temp_dict = {}          # {1: '2string', 2: '3string', 3: '4string'} extracts into the next 3 variables
+    temp_list = []          # ['string', 'string', 'string']
+    temp_index_list = []    # [2, 3, 4]
+    get_index_dict = {}     # {1: 2, 2: 3, 3: 4}
+
+    for letter in sorted_data:  # gets entire alphabet lettered dictionary: {"a": vals}
+        if last[0] in letter:  # gets list of key entries for letter: {last[0]: [{LIST}, {OF}, {VALUES}]}
+            for doctor in letter[last[0]]:  # single entry. {'last': name, 'first': name, 'fax': ##########}
+                if first:
+                    if last in doctor["last"] and first in doctor["first"]:
+                        result = ('{:>10} {:>11} {:>12}'.format(doctor["last"].upper(), doctor["first"].upper(),
+                                                                doctor["fax"]))
+                        temp_index_list.append(entry_index)
+                        temp_list.append(result)
+                elif last in doctor["last"]:
+                    result = '{:>10} {:>11} {:>12}'.format(doctor["last"].upper(), doctor["first"].upper(),
+                                                           doctor["fax"])
+                    temp_index_list.append(entry_index)
+                    temp_list.append(result)
+                li = letter_index
+                entry_index = entry_index + 1
+        letter_index = letter_index + 1
+
+    for counter, result in enumerate(temp_list, 1):
+        temp_dict[counter] = result
+
+    try:
+        i = 0
+        if len(temp_index_list) >= 1:
+            print('LAST'.center(12, '-'), 'FIRST'.center(11, '-'), 'FAX'.center(12, '-'))
+
+            while i != len(temp_index_list):
+                for keys in temp_dict.keys():
+                    get_index_dict[keys] = temp_index_list[i]
+                    print(keys, temp_list[i])
+                    i += 1
+
+            dec = int(input("Enter a number to delete entry: "))
+            temp_index = None
+            for key, val in get_index_dict.items():
+                if dec == key:
+                    temp_index = val
+                    entry_last = sorted_data[li][last[0]][val]["last"].upper()
+                    entry_first = sorted_data[li][last[0]][val]["first"].upper()
+                    entry_fax = sorted_data[li][last[0]][val]["fax"]
+
+            decision = input(
+                "Are you sure you want to delete %s, %s %s? (y/n): " % (entry_last, entry_first, entry_fax)).lower()
+
+            if decision == 'y':
+                print("Deleted %s, %s %s" % (entry_last, entry_first, entry_fax))
+                del sorted_data[li][last[0]][temp_index]
+                save(sorted_data)
+    except (ValueError, UnboundLocalError):
+        main()
 
 
 # Saves all data to this file
