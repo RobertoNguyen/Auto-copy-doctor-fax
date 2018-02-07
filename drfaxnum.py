@@ -61,8 +61,10 @@ def main():
         if command == 'help':
             print('\n---------COMMAND----------------------------------DESCRIPTION------------------')
             print('1. LIST                                  lists ALL entries')
-            print('2. ADD  <LASTNAME, FIRSTNAME, FAX#>      to add entry LASTN/FIRSTN/FAX#')
-            print('3. EDIT <LAST NAME/PARTS OF LAST NAME>   to edit entry LASTN/FIRSTN/FAX#\n\n')
+            print('2. ADD  <LASTNAME> [FIRSTNAME] <FAX>     to add entry LASTN/FIRSTN/FAX#')
+            print('3. EDIT <LAST NAME> [FIRSTNAME]          to edit entry LASTN/FIRSTN/FAX#')
+            print('4. DEL  <LAST NAME>                      list entries w/ last name to delete')
+            print('5. EXAMPLES                              list examplex of commands')
             main()
         elif command == 'add':
             # TODO FIX SO CANT ADD 2: LCHC NONE <fax> or etc.
@@ -102,7 +104,6 @@ def main():
 
         elif command == 'edit':
             delete_entry(firstN, lastN2, fax, True)
-            print("True: %s. Use <command> to map to functions" % command)
 
         elif command == 'del':
             delete_entry(firstN, lastN2)
@@ -110,13 +111,21 @@ def main():
         elif command == 'list':
             list_data()
 
+        elif command == 'examples':
+            print('------------------------------------EXAMPLES------------------------------------')
+            print('command <last> <first>')
+            print('<last> & <first> can be any substring length of the name being searched')
+            print('add      | add lin david 1234567890 | add lin 1234567890')
+            print('edit lin | edit l  | edit lin david | edit l d ')
+            print('del lin  | edit l')
+
         elif lastN != None:
             print("Performing lookup")
             lookup(lastN, firstN)
-        main()
     except (AttributeError, IndexError, TypeError):
         print('Invalid command, try again\n')
-        main()
+
+    main()
 
 
 def lookup(lastN, firstN=None, add=False):
@@ -141,7 +150,6 @@ def lookup(lastN, firstN=None, add=False):
                 search_counter += 1
                 search_results[search_counter] = temp_dict[i]
         if add:
-            print(search_results)
             return search_results
         else:
             if search_counter == 0:     # No search results
@@ -325,55 +333,59 @@ def add_entry(last=None, first=None, fax=None):
     result_list = lookup(last, first, True)
 
     try:
-        for index in range(len(sorted_data)):
-            for letters, lists in sorted_data[index].items():
-                if newletter == letters:  # last[0] == letters
-                    seenLetter = True
+        if len(sorted_data) == 0:
+            sorted_data.append(letter_dict)
+            if first != None: first = first.upper()
+            print("Added person: %s, %s %s" % (last.upper(), first, fax))
+            save(sorted_data)
+        else:
+            for index in range(len(sorted_data)):
+                for letters, lists in sorted_data[index].items():
+                    if newletter == letters:  # last[0] == letters
+                        seenLetter = True
 
-                    for keys, listed in result_list.items():  # uses lookup function to check if last, first exists
-                        if last == listed["last"] and first == listed["first"] and fax == listed["fax"]:
-                            print("Person already exists: %s, %s %s" % (last, first, fax))
-                            break
-                        elif last == listed["last"] and first == listed["first"] and fax != listed[
-                            "fax"] and keys == len(result_list):
+                        for keys, listed in result_list.items():  # uses lookup function to check if last, first exists
+                            if last == listed["last"] and first == listed["first"] and fax == listed["fax"]:
+                                print("Person already exists: %s, %s %s" % (last, first, fax))
+                                break
+                            elif last == listed["last"] and first == listed["first"] and fax != listed[
+                                "fax"] and keys == len(result_list):
 
-                            results = '{}, {}, {} '.format(listed["last"].upper(), listed["first"].upper(), listed["fax"])
-                            decision = int(input(
-                                "A different fax # exists for the same person: " + results +
-                                "\n0. Main menu \n1. Replace with new fax # "
-                                "\n2. Edit entry \n3. Delete entry \nEnter a number:"))
+                                results = '{}, {}, {} '.format(listed["last"].upper(), listed["first"].upper(), listed["fax"])
+                                decision = int(input(
+                                    "A different fax # exists for the same person: " + results +
+                                    "\n0. Main menu \n1. Replace with new fax # "
+                                    "\n2. Edit entry \n3. Delete entry \nEnter a number:"))
 
-                            if decision == 0:  # main menu
-                                main()
-                            elif decision == 1:  # replace old fax #
-                                listed["fax"] = fax
+                                if decision == 0:  # main menu
+                                    main()
+                                elif decision == 1:  # replace old fax #
+                                    listed["fax"] = fax
+                                    save(sorted_data)
+                                    main()
+                                elif decision == 2:  # edit searched entry
+                                    delete_entry(listed["last"], listed["first"], listed["fax"], True)
+                                    save(sorted_data)
+                                elif decision == 3:
+                                    delete_entry(listed["last"], listed["first"])
                                 save(sorted_data)
-                                main()
-                            elif decision == 2:  # edit searched entry
-                                delete_entry(listed["last"], listed["first"], listed["fax"], True)
-                                save(sorted_data)
-                            elif decision == 3:
-                                delete_entry(listed["last"], listed["first"])
+                        if not result_list:
+                            add_person(first)
                             save(sorted_data)
-                    if not result_list:
-                        print("1 adding")
-                        add_person(first)
+                            break
+                        elif result_list:
+                            for val in result_list.values():
+                                if (last != val["last"] or last == val["last"]) and first != val["first"]:
+                                    add_person(first)
+                                    save(sorted_data)
+                                    break
+
+                    elif not seenLetter and index == len(sorted_data) - 1:  # last[0] does not exist & reached end of index
+                        sorted_data.append(letter_dict)
+                        if first != None: first = first.upper()
+                        print("Added person: %s, %s %s" % (last.upper(), first, fax))
                         save(sorted_data)
                         break
-                    elif result_list:
-                        for val in result_list.values():
-                            if (last != val["last"] or last == val["last"]) and first != val["first"]:
-                                print("3 adding")
-                                add_person(first)
-                                save(sorted_data)
-                                break
-
-                elif not seenLetter and index == len(sorted_data) - 1:  # last[0] does not exist & reached end of index
-                    sorted_data.append(letter_dict)
-                    if first != None: first = first.upper()
-                    print("Added person: %s, %s %s" % (last.upper(), first, fax))
-                    save(sorted_data)
-                    break
         main()
     except TypeError:
         pass
@@ -406,12 +418,11 @@ def delete_entry(last, first=None, fax=None, edit=False):
 
     for counter, result in enumerate(temp_list, 1):
         temp_dict[counter] = result
-    print(temp_dict)
 
     try:
         i = 0
         if len(temp_index_list) >= 1:
-            print('LAST'.center(12, '-'), 'FIRST'.center(11, '-'), 'FAX'.center(12, '-'))
+            print('\nLAST'.center(12, '-'), 'FIRST'.center(11, '-'), 'FAX'.center(12, '-'))
 
             while i != len(temp_index_list):
                 for keys in temp_dict.keys():
@@ -471,7 +482,6 @@ def delete_entry(last, first=None, fax=None, edit=False):
                             sorted_data[li][last[0]][temp_index]["first"] = entry_first.lower()
                             sorted_data[li][last[0]][temp_index]["fax"] = '1' + entry_fax
                             save(sorted_data)
-
             elif not edit:
                 dec = int(input("Enter a number to delete entry: "))
                 temp_index = None
@@ -489,18 +499,28 @@ def delete_entry(last, first=None, fax=None, edit=False):
                     print("Deleted: %s, %s %s" % (entry_last, entry_first, entry_fax))
                     del sorted_data[li][last[0]][temp_index]
                     save(sorted_data)
+
+        letter_size = len(sorted_data[li][last[0]])
+        temp_letter = last[0]
+
+        if letter_size == 0 or letter_size == None:
+            sorted_data[li][temp_letter] = 1
+            del sorted_data[li]
+            save(sorted_data)
+
     except (ValueError, UnboundLocalError):
         main()
 
 
 # Saves all data to this file
 def save(newdata):
-
-    for length in range(len(newdata)):
-        unsorted_drs = sort_alphabet(newdata[length])  # "a": [{'last':},..]
-        for keys, values in unsorted_drs.items():
-            sorted_drs = sort_drs(values)
-            newdata[length][keys] = sorted_drs
+    #print(newdata)
+    # TODO NEED TO FIX sort_alphabet/sort_drs so it knows how to sort entries w/o first name and w/ first name
+    #for length in range(len(newdata)):
+     #   unsorted_drs = sort_alphabet(newdata[length])  # "a": [{'last':},..]
+      #  for keys, values in unsorted_drs.items():
+       #     sorted_drs = sort_drs(values)
+        #    newdata[length][keys] = sorted_drs
 
     with open('faxnum.txt', "w") as q:
         q.write('{"doctors":\n')
