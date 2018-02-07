@@ -55,7 +55,7 @@ def main():
         fax = None
 
         if areacode and phone1 and phone2:
-            fax = areacode + phone1 + phone2
+            fax = '1' + areacode + phone1 + phone2
 
         # if re.search(command, 'add, edit, del, list'):
         if command == 'help':
@@ -82,26 +82,26 @@ def main():
                 print("\nIf first or last name has 2 parts, make it into 1. e.g. Del Rio = Delrio")
                 last = input("Enter last name:").lower().strip(' ')
                 first = input("Enter first name:").strip(' ')
-                fax = input("Enter fax number [Must have 10 digits]:")
+                fax = input("Enter 10-digit fax number 1+[###-###-####]:")
 
                 if first == None or first == '':
                     pass
                 else:
                     first = first.lower()
 
+                if len(fax) < 10:
+                    fax = input("Try again [Must have 10 digits]:")
+
                 areacode = phone_regex.search(fax).group(2)
                 phone1 = phone_regex.search(fax).group(5)
                 phone2 = phone_regex.search(fax).group(7)
 
                 if areacode and phone1 and phone2:
-                    fax = areacode + phone1 + phone2
-                else:
-                    fax = input("Try again [Must have 10 digits]:")
-
-                while len(fax) == 10:
+                    fax = '1' + areacode + phone1 + phone2
                     add_entry(last, first, fax)
 
         elif command == 'edit':
+            delete_entry(firstN, lastN2, fax, True)
             print("True: %s. Use <command> to map to functions" % command)
 
         elif command == 'del':
@@ -188,10 +188,10 @@ def display_results(result_counter, temp_dict):
                         .format(temp_dict[num_input]["last"], temp_dict[num_input]["first"], temp_dict[num_input]["fax"]).upper()
                     pyperclip.copy(temp_dict[num_input]["fax"])
                     print('Copied fax number for: %s \n' % result)
-                    main()
+                    break
                 elif num_input == 0:
                     print()
-                    main()
+                    break
             except (ValueError, KeyError):
                 pass
     main()
@@ -297,8 +297,12 @@ def sort_drs(dictionary, first_name=False):
 
 def add_entry(last=None, first=None, fax=None):
 
-    def add_person():
+    def add_person(first):
         lists.append(entry_dict)
+        if first == None or first == '':
+            first = ''
+        else:
+            first = first.upper()
         print("Added person: %s, %s %s" % (last.upper(), first, fax))
 
     entry_dict, letter_dict = {}, {}
@@ -309,10 +313,6 @@ def add_entry(last=None, first=None, fax=None):
         first = ''
     else:
         first.upper()
-
-    #TODO FIX REGEX ISSUE-----------------
-    if len(fax) == 10:
-        fax = '1' + fax
 
     entry_dict["last"] = last
     entry_dict["first"] = first
@@ -332,39 +332,39 @@ def add_entry(last=None, first=None, fax=None):
 
                     for keys, listed in result_list.items():  # uses lookup function to check if last, first exists
                         if last == listed["last"] and first == listed["first"] and fax == listed["fax"]:
-                            print(fax)
-                            print(listed["fax"])
                             print("Person already exists: %s, %s %s" % (last, first, fax))
                             break
                         elif last == listed["last"] and first == listed["first"] and fax != listed[
                             "fax"] and keys == len(result_list):
-                            decision = int(input(
-                                "A different fax # exists for the same person. Enter a number: \n0. Main menu "
-                                "\n1. Add new person \n2. Replace with new fax # \n3. Edit entry \n4. Delete entry"))
 
-                            if decision == 0:
+                            results = '{}, {}, {} '.format(listed["last"].upper(), listed["first"].upper(), listed["fax"])
+                            decision = int(input(
+                                "A different fax # exists for the same person: " + results +
+                                "\n0. Main menu \n1. Replace with new fax # "
+                                "\n2. Edit entry \n3. Delete entry \nEnter a number:"))
+
+                            if decision == 0:  # main menu
                                 main()
-                            elif decision == 1:
-                                print("2 adding")
-                                add_person()
-                                print(lists)
+                            elif decision == 1:  # replace old fax #
+                                listed["fax"] = fax
                                 save(sorted_data)
                                 main()
-                            elif decision == 2:
-                                newfax = input('Enter a new fax number:')
-                                # fax = newfax
-                            break
-
+                            elif decision == 2:  # edit searched entry
+                                delete_entry(listed["last"], listed["first"], listed["fax"], True)
+                                save(sorted_data)
+                            elif decision == 3:
+                                delete_entry(listed["last"], listed["first"])
+                            save(sorted_data)
                     if not result_list:
                         print("1 adding")
-                        add_person()
+                        add_person(first)
                         save(sorted_data)
                         break
                     elif result_list:
                         for val in result_list.values():
                             if (last != val["last"] or last == val["last"]) and first != val["first"]:
                                 print("3 adding")
-                                add_person()
+                                add_person(first)
                                 save(sorted_data)
                                 break
 
@@ -379,7 +379,7 @@ def add_entry(last=None, first=None, fax=None):
         pass
 
 
-def delete_entry(last, first=None, fax=None):
+def delete_entry(last, first=None, fax=None, edit=False):
     letter_index, entry_index = 0, 0
     temp_dict = {}          # {1: '2string', 2: '3string', 3: '4string'} extracts into the next 3 variables
     temp_list = []          # ['string', 'string', 'string']
@@ -406,6 +406,7 @@ def delete_entry(last, first=None, fax=None):
 
     for counter, result in enumerate(temp_list, 1):
         temp_dict[counter] = result
+    print(temp_dict)
 
     try:
         i = 0
@@ -418,22 +419,76 @@ def delete_entry(last, first=None, fax=None):
                     print(keys, temp_list[i])
                     i += 1
 
-            dec = int(input("Enter a number to delete entry: "))
-            temp_index = None
-            for key, val in get_index_dict.items():
-                if dec == key:
-                    temp_index = val
-                    entry_last = sorted_data[li][last[0]][val]["last"].upper()
-                    entry_first = sorted_data[li][last[0]][val]["first"].upper()
-                    entry_fax = sorted_data[li][last[0]][val]["fax"]
+            if edit:
+                if len(get_index_dict) == 1:
+                    dec = 1
+                else:
+                    dec = int(input("Enter a number to edit entry: "))
 
-            decision = input(
-                "Are you sure you want to delete %s, %s %s? (y/n): " % (entry_last, entry_first, entry_fax)).lower()
+                for key, val in get_index_dict.items():
+                    if dec == key:
+                        temp_index = val
+                        entry_last = sorted_data[li][last[0]][val]["last"].upper()
+                        entry_first = sorted_data[li][last[0]][val]["first"].upper()
+                        entry_fax = sorted_data[li][last[0]][val]["fax"]
+                    print(entry_last, entry_first, entry_fax)
 
-            if decision == 'y':
-                print("Deleted %s, %s %s" % (entry_last, entry_first, entry_fax))
-                del sorted_data[li][last[0]][temp_index]
-                save(sorted_data)
+                print('\nWhat would you like to edit about: %s, %s %s' % (entry_last, entry_first, entry_fax))
+                print("0. Main Menu")
+                print("1. Last Name")
+                print("2. First Name")
+                print("3. Fax Number")
+                print("4. All the Above")
+                decision = int(input("Enter a number: "))
+
+                if 4 >= decision >= 0:
+                    if decision == 0:
+                        main()
+                    if decision == 1:
+                        entry_last = input("What would you like to change last name %s to?: " % entry_last)
+                        sorted_data[li][last[0]][temp_index]["last"] = entry_last.lower()
+                        save(sorted_data)
+                    elif decision == 2:
+                        entry_first = input("What would you like to change first name %s to?:" % entry_first)
+                        sorted_data[li][last[0]][temp_index]["first"] = entry_first.lower()
+                        save(sorted_data)
+                    elif decision == 3:
+                        entry_fax = input("What would you like to change fax number %s to?: " % entry_fax)
+                        sorted_data[li][last[0]][temp_index]["fax"] = entry_fax
+                        save(sorted_data)
+                    elif decision == 4:
+                        entry_last = input("What would you like to change last name %s to?: " % entry_last)
+                        entry_first = input("What would you like to change first name %s to?: " % entry_first)
+                        entry_fax = input("What would you like to change fax number %s to?: " % entry_fax)
+
+                        if entry_last[0] != last[0]:
+                            del sorted_data[li][last[0]][temp_index]
+                            if (entry_last != None or entry_last != '') and (entry_fax != None or entry_fax != '') \
+                                and len(entry_fax) == 10:
+                                add_entry(entry_last, entry_first, entry_fax)
+                        elif entry_last[0] == last[0]:
+                            sorted_data[li][last[0]][temp_index]["last"] = entry_last.lower()
+                            sorted_data[li][last[0]][temp_index]["first"] = entry_first.lower()
+                            sorted_data[li][last[0]][temp_index]["fax"] = '1' + entry_fax
+                            save(sorted_data)
+
+            elif not edit:
+                dec = int(input("Enter a number to delete entry: "))
+                temp_index = None
+                for key, val in get_index_dict.items():
+                    if dec == key:
+                        temp_index = val
+                        entry_last = sorted_data[li][last[0]][val]["last"].upper()
+                        entry_first = sorted_data[li][last[0]][val]["first"].upper()
+                        entry_fax = sorted_data[li][last[0]][val]["fax"]
+
+                decision = input(
+                    "Are you sure you want to delete %s, %s %s? (y/n): " % (entry_last, entry_first, entry_fax)).lower()
+
+                if decision == 'y':
+                    print("Deleted: %s, %s %s" % (entry_last, entry_first, entry_fax))
+                    del sorted_data[li][last[0]][temp_index]
+                    save(sorted_data)
     except (ValueError, UnboundLocalError):
         main()
 

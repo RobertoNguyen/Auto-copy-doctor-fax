@@ -1,55 +1,164 @@
 {"doctors":
-    [
-        {"l":
-            [
-                {"last": "lin", "first": "david", "fax": "9977779999"},
-                {"last": "lchc", "first": "", "fax": "9977779999"}
-            ]
-        },
-        {"s":
-            [
-                {"last": "smith", "first": "alex", "fax": "123456778"},
-                {"last": "shore", "first": "ally", "fax": "1800000"},
-                {"last": "smith", "first": "aerie", "fax": "1234569871"},
-                {"last": "shen", "first": "pluto", "fax": "9781234654"}
-            ]
-        },
-        {"u":
-            [
-                {"last": "undag", "first": "tushar", "fax": "9999999999"},
-                {"last": "uber", "first": "toby", "fax": "1234569871"},
-                {"last": "usher", "first": "tonka", "fax": "9781234654"}
-            ]
-        },
-        {"a":
-            [
-                {"last": "andrews", "first": "chris", "fax": "18000000"},
-                {"last": "andro", "first": "pete", "fax": "1804523455"},
-                {"last": "alex", "first": "david", "fax": "9873654321"},
-                {"last": "antoine", "first": "dad", "fax": "0123444321"}
-            ]
-        },
-        {"c":
-            [
-                {"last": "chang", "first": "dawn", "fax": "19789379992"},
-                {"last": "churo", "first": "pete", "fax": "1804523455"},
-                {"last": "chen", "first": "aubry", "fax": "9873654321"},
-                {"last": "choppa", "first": "mom", "fax": "0123444321"}
-            ]
-        },
-        {"b":
-            [
-                {"last": "black", "first": "jack", "fax": "9999999999"},
-                {"last": "bortles", "first": "aerie", "fax": "1234569871"},
-                {"last": "bush", "first": "blake", "fax": "9781234654"}
-            ]
-        },
-        {"p":
-            [
-                {"last": "patel", "first": "tushar", "fax": "9999999999"},
-                {"last": "patel", "first": "toby", "fax": "1234569871"},
-                {"last": "patel", "first": "tonka", "fax": "9781234654"}
-            ]
-        }
-    ]
-}
+[
+    {
+        "a": [
+            {
+                "last": "alex",
+                "first": "david",
+                "fax": "9873654321"
+            },
+            {
+                "last": "andrews",
+                "first": "chris",
+                "fax": "18000000"
+            },
+            {
+                "last": "andro",
+                "first": "pete",
+                "fax": "1804523455"
+            },
+            {
+                "last": "antoine",
+                "first": "dad",
+                "fax": "0123444321"
+            }
+        ]
+    },
+    {
+        "b": [
+            {
+                "last": "black",
+                "first": "jack",
+                "fax": "9999999999"
+            },
+            {
+                "last": "bortles",
+                "first": "aerie",
+                "fax": "1234569871"
+            },
+            {
+                "last": "bush",
+                "first": "blake",
+                "fax": "9781234654"
+            }
+        ]
+    },
+    {
+        "c": [
+            {
+                "last": "chang",
+                "first": "dawn",
+                "fax": "19789379992"
+            },
+            {
+                "last": "chen",
+                "first": "aubry",
+                "fax": "9873654321"
+            },
+            {
+                "last": "choppa",
+                "first": "mom",
+                "fax": "0123444321"
+            },
+            {
+                "last": "churo",
+                "first": "pete",
+                "fax": "1804523455"
+            }
+        ]
+    },
+    {
+        "l": [
+            {
+                "last": "lin",
+                "first": "david",
+                "fax": "9977779999"
+            }
+        ]
+    },
+    {
+        "p": [
+            {
+                "last": "patel",
+                "first": "toby",
+                "fax": "1234569871"
+            },
+            {
+                "last": "patel",
+                "first": "tonka",
+                "fax": "9781234654"
+            },
+            {
+                "last": "patel",
+                "first": "tushar",
+                "fax": "9999999999"
+            },
+            {
+                "last": "patty",
+                "first": "pat",
+                "fax": "11234567890"
+            }
+        ]
+    },
+    {
+        "s": [
+            {
+                "last": "shen",
+                "first": "pluto",
+                "fax": "9781234654"
+            },
+            {
+                "last": "shore",
+                "first": "ally",
+                "fax": "1800000"
+            },
+            {
+                "last": "smith",
+                "first": "aerie",
+                "fax": "1234569871"
+            },
+            {
+                "last": "smith",
+                "first": "alex",
+                "fax": "123456778"
+            }
+        ]
+    },
+    {
+        "u": [
+            {
+                "last": "uber",
+                "first": "toby",
+                "fax": "1234569871"
+            },
+            {
+                "last": "undag",
+                "first": "tushar",
+                "fax": "9999999999"
+            },
+            {
+                "last": "usher",
+                "first": "tonka",
+                "fax": "9781234654"
+            }
+        ]
+    },
+    {
+        "z": [
+            {
+                "last": "zee",
+                "first": "",
+                "fax": "10987654321"
+            }
+        ]
+    },
+    {
+        "q": [
+            {
+                "last": "quoquo",
+                "first": "adf",
+                "fax": "0987654321"
+            }
+        ]
+    }
+]}
