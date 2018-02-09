@@ -101,12 +101,15 @@ def main():
                 if areacode and phone1 and phone2:
                     fax = '1' + areacode + phone1 + phone2
                     add_entry(last, first, fax)
-
+        elif command == 'massadd':
+            print('Enter: <LAST> <FIRST> <FAX>')
+            add_entry('', '', '', True)
+            
         elif command == 'edit':
-            delete_entry(firstN, lastN2, fax, True)
+            modify_entry(firstN, lastN2, fax, True)
 
         elif command == 'del':
-            delete_entry(firstN, lastN2)
+            modify_entry(firstN, lastN2)
 
         elif command == 'list':
             list_data()
@@ -120,7 +123,6 @@ def main():
             print('del lin  | edit l')
 
         elif lastN != None:
-            print("Performing lookup")
             lookup(lastN, firstN)
     except (AttributeError, IndexError, TypeError):
         print('Invalid command, try again\n')
@@ -180,10 +182,10 @@ def display_results(result_counter, temp_dict):
         print('Found %s result' % result_counter)
         print('Copied fax number for: %s \n' % result)
     elif result_counter > 1:
-        print('LAST'.center(12, '-'), 'FIRST'.center(11, '-'), 'FAX'.center(12, '-'))
+        print('  ', 'LAST'.center(15, '-'), 'FIRST'.center(16, '-'), 'FAX'.center(13, '-'))
         
         for i in range(1, result_counter+1):
-            result = '{} {:>10} {:>10} {:>13}'.format(i, temp_dict[i]["last"], temp_dict[i]["first"], temp_dict[i]["fax"]).upper()
+            result = '{:>2} {:>15} {:>16} {:>13}'.format(i, temp_dict[i]["last"], temp_dict[i]["first"], temp_dict[i]["fax"]).upper()
             print(result)
         print('Found %d results\n' % result_counter)
 
@@ -207,27 +209,32 @@ def display_results(result_counter, temp_dict):
 
 # Lists all doctors
 def list_data():
-    global sorted_data
-    sorted_data = sort_alphabet(sorted_data)
 
-    temp_dict = {}
-    result_counter = 0      # resets counter if already been used before in other functions
+    try:
+        global sorted_data
+        sorted_data = sort_alphabet(sorted_data)
 
-    print('LAST'.center(12, '-'), 'FIRST'.center(11, '-'), 'FAX'.center(12, '-'))
-
-    for letters in range(len(sorted_data)):
-        for dr in sorted_data[letters].values():
-            for index in range(len(dr)):
-                result_counter += 1
-                temp_dict[result_counter] = dr[index]
-                if result_counter < 10:
-                    entry = '{:>2} {:>10} {:>10} {:>13}'\
-                        .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"]).upper()
-                else:
-                    entry = '{} {:>10} {:>10} {:>13}'\
-                        .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"]).upper()
-                print(entry)
-            print()
+        temp_dict = {}
+        result_counter = 0  # resets counter if already been used before in other functions
+        for letters in range(len(sorted_data)):
+            if letters % 3 == 0: print('  ', 'LAST'.center(16, '-'), 'FIRST'.center(16, '-'), 'FAX'.center(13, '-'))
+            for dr in sorted_data[letters].values():
+                for index in range(len(dr)):
+                    result_counter += 1
+                    temp_dict[result_counter] = dr[index]
+                    if result_counter >= 10:
+                        entry = '{:>3} {:>15} {:>16} {:>13}' \
+                            .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"]).upper()
+                    elif result_counter < 10 :
+                        entry = '{:>3} {:>15} {:>16} {:>13}' \
+                            .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"]).upper()
+                    else:
+                        entry = '{} {:>14} {:>16} {:>13}' \
+                            .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"]).upper()
+                    print(entry)
+                print()
+    except NameError:
+        main()
 
 
 # Sorts data file first before using any of the other functions
@@ -303,7 +310,7 @@ def sort_drs(dictionary, first_name=False):
             pass
 
 
-def add_entry(last=None, first=None, fax=None):
+def add_entry(last=None, first=None, fax=None, massadd=False):
 
     def add_person(first):
         lists.append(entry_dict)
@@ -316,6 +323,18 @@ def add_entry(last=None, first=None, fax=None):
     entry_dict, letter_dict = {}, {}
     entry_list = []
     seenLetter = False
+
+    if last == '' and first == '' and fax == '':
+        arg = input('(Enter to exit) Add: ').lower().split()
+
+        if len(arg) == 3:
+            last = arg[0]
+            first = arg[1]
+            fax = arg[2]
+        elif len(arg) == 2:
+            last = arg[0]
+            first = ''
+            fax = arg[1]
 
     if first == None or first == '':
         first = ''
@@ -337,7 +356,6 @@ def add_entry(last=None, first=None, fax=None):
             sorted_data.append(letter_dict)
             if first != None: first = first.upper()
             print("Added person: %s, %s %s" % (last.upper(), first, fax))
-            save(sorted_data)
         else:
             for index in range(len(sorted_data)):
                 for letters, lists in sorted_data[index].items():
@@ -358,76 +376,77 @@ def add_entry(last=None, first=None, fax=None):
                                     "\n2. Edit entry \n3. Delete entry \nEnter a number:"))
 
                                 if decision == 0:  # main menu
-                                    main()
+                                    pass
                                 elif decision == 1:  # replace old fax #
                                     listed["fax"] = fax
-                                    save(sorted_data)
-                                    main()
                                 elif decision == 2:  # edit searched entry
-                                    delete_entry(listed["last"], listed["first"], listed["fax"], True)
-                                    save(sorted_data)
+                                    modify_entry(listed["last"], listed["first"], listed["fax"], True)
                                 elif decision == 3:
-                                    delete_entry(listed["last"], listed["first"])
-                                save(sorted_data)
+                                    modify_entry(listed["last"], listed["first"])
                         if not result_list:
                             add_person(first)
-                            save(sorted_data)
                             break
                         elif result_list:
                             for val in result_list.values():
                                 if (last != val["last"] or last == val["last"]) and first != val["first"]:
                                     add_person(first)
-                                    save(sorted_data)
                                     break
-
                     elif not seenLetter and index == len(sorted_data) - 1:  # last[0] does not exist & reached end of index
                         sorted_data.append(letter_dict)
                         if first != None: first = first.upper()
                         print("Added person: %s, %s %s" % (last.upper(), first, fax))
-                        save(sorted_data)
                         break
-        main()
     except TypeError:
         pass
 
+    save(sorted_data)
+    if massadd:
+        add_entry('', '', '', True)
+    else:
+        main()
 
-def delete_entry(last, first=None, fax=None, edit=False):
+
+def modify_entry(last, first=None, fax=None, edit=False):
     letter_index, entry_index = 0, 0
     temp_dict = {}          # {1: '2string', 2: '3string', 3: '4string'} extracts into the next 3 variables
     temp_list = []          # ['string', 'string', 'string']
     temp_index_list = []    # [2, 3, 4]
     get_index_dict = {}     # {1: 2, 2: 3, 3: 4}
 
-    for letter in sorted_data:  # gets entire alphabet lettered dictionary: {"a": vals}
-        if last[0] in letter:  # gets list of key entries for letter: {last[0]: [{LIST}, {OF}, {VALUES}]}
-            for doctor in letter[last[0]]:  # single entry. {'last': name, 'first': name, 'fax': ##########}
-                if first:
-                    if last in doctor["last"] and first in doctor["first"]:
-                        result = ('{:>10} {:>11} {:>12}'.format(doctor["last"].upper(), doctor["first"].upper(),
-                                                                doctor["fax"]))
+    try:
+        for letter in sorted_data:  # gets entire alphabet lettered dictionary: {"a": vals}
+            if last[0] in letter:  # gets list of key entries for letter: {last[0]: [{LIST}, {OF}, {VALUES}]}
+                for doctor in letter[last[0]]:  # single entry. {'last': name, 'first': name, 'fax': ##########}
+                    if first:
+                        if last in doctor["last"] and first in doctor["first"]:
+                            result = ('{:>10} {:>11} {:>12}'.format(doctor["last"].upper(), doctor["first"].upper(),
+                                                                    doctor["fax"]))
+                            temp_index_list.append(entry_index)
+                            temp_list.append(result)
+                    elif last in doctor["last"]:
+                        result = '{:>15} {:>16} {:>13}'.format(doctor["last"].upper(), doctor["first"].upper(),
+                                                               doctor["fax"])
                         temp_index_list.append(entry_index)
                         temp_list.append(result)
-                elif last in doctor["last"]:
-                    result = '{:>10} {:>11} {:>12}'.format(doctor["last"].upper(), doctor["first"].upper(),
-                                                           doctor["fax"])
-                    temp_index_list.append(entry_index)
-                    temp_list.append(result)
-                li = letter_index
-                entry_index = entry_index + 1
-        letter_index = letter_index + 1
+                    li = letter_index
+                    entry_index = entry_index + 1
+            letter_index = letter_index + 1
 
-    for counter, result in enumerate(temp_list, 1):
-        temp_dict[counter] = result
+        for counter, result in enumerate(temp_list, 1):
+            temp_dict[counter] = result
 
-    try:
         i = 0
         if len(temp_index_list) >= 1:
-            print('\nLAST'.center(12, '-'), 'FIRST'.center(11, '-'), 'FAX'.center(12, '-'))
+            print()
+            print(' ', 'LAST'.center(16, '-'), 'FIRST'.center(16, '-'), 'FAX'.center(13, '-'))
 
             while i != len(temp_index_list):
                 for keys in temp_dict.keys():
                     get_index_dict[keys] = temp_index_list[i]
-                    print(keys, temp_list[i])
+                    if keys < 10:
+                        print('', keys, temp_list[i])
+                    else:
+                        print(keys, temp_list[i])
                     i += 1
 
             if edit:
@@ -508,7 +527,7 @@ def delete_entry(last, first=None, fax=None, edit=False):
             del sorted_data[li]
             save(sorted_data)
 
-    except (ValueError, UnboundLocalError):
+    except (ValueError, UnboundLocalError, NameError):
         main()
 
 
@@ -517,10 +536,10 @@ def save(newdata):
     #print(newdata)
     # TODO NEED TO FIX sort_alphabet/sort_drs so it knows how to sort entries w/o first name and w/ first name
     #for length in range(len(newdata)):
-     #   unsorted_drs = sort_alphabet(newdata[length])  # "a": [{'last':},..]
-      #  for keys, values in unsorted_drs.items():
-       #     sorted_drs = sort_drs(values)
-        #    newdata[length][keys] = sorted_drs
+    #    unsorted_drs = sort_alphabet(newdata[length])  # "a": [{'last':},..]
+    #    for keys, values in unsorted_drs.items():
+    #        sorted_drs = sort_drs(values)
+    #        newdata[length][keys] = sorted_drs
 
     with open('faxnum.txt', "w") as q:
         q.write('{"doctors":\n')
@@ -544,28 +563,25 @@ if __name__ == "__main__":
             newPath = r'C:\Users\%s\Desktop' % getpass.getuser()
             os.chdir(newPath)
 
-    if os.path.exists('./faxnum.txt') or os.path.exists('./sortedfaxnum.txt'):
-        pass
+    if os.path.exists('./faxnum.txt') :
+        with open('faxnum.txt') as f:
+            data = json.load(f)
+            sorted_data = data["doctors"]
+            sorted_data = sort_alphabet(sorted_data)
+        for length in range(len(sorted_data)):
+            unsorted_drs = sort_alphabet(sorted_data[length])  # "a": [{'last':},..]
+            for keys, values in unsorted_drs.items():
+                sorted_drs = sort_drs(values)
+                sorted_data[length][keys] = sorted_drs
+
+        with open('faxnum.txt', "w") as q:
+            q.write('{"doctors":\n')
+            json.dump(sorted_data, q, indent=4)
+            q.write('}')
     else:
-        q = open("sortedfaxnum.txt", "w")
-        q.close()
         f = open("faxnum.txt", "w")
+        f.write('{"doctors": []}\n')
         f.close()
 
-    with open('faxnum.txt') as f:
-        data = json.load(f)
-        sorted_data = data["doctors"]
-        sorted_data = sort_alphabet(sorted_data)
-
-    for length in range(len(sorted_data)):
-        unsorted_drs = sort_alphabet(sorted_data[length])  # "a": [{'last':},..]
-        for keys, values in unsorted_drs.items():
-            sorted_drs = sort_drs(values)
-            sorted_data[length][keys] = sorted_drs
-
-    with open('faxnum123.txt', "w") as p:
-        p.write('{"doctors":\n')
-        json.dump(sorted_data, p, indent=4)
-        p.write('}')
 
     main()
