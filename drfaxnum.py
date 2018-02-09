@@ -12,36 +12,36 @@ logging.basicConfig(level=logging.DEBUG)
 #logging.disable(logging.DEBUG)
 
 
+# regex to check for <commands> <arg(s)> or <last> +/- <first> name searches
+command_regex = re.compile(r'''
+                            (\s*[a-zA-Z]+)          # group(1)  <commands>          or      <lastN>
+                            ((\s*) (,)? (\s*))?     
+                            ([a-zA-Z]+)?            # group(6)  <lastN>             or      <firstN>
+                            ((\s*) (,)? (\s*))?
+                            ([a-zA-Z]+)?            # group(11) <firstN> or None      
+                            ((\s*) (,)? (\s*))?
+
+                            ( \( )?
+                            (\d{3})?                # group(17) <###>
+                            ( \) )?
+                            (\s | - | \.)?
+                            (\d{3})?                # group(20) <###>
+                            (\s | - | \.)?
+                            (\d{4})?                # group(22) <####>
+                           ''', re.VERBOSE | re.IGNORECASE)
+
+phone_regex = re.compile(r'''
+                          ( \( )?
+                          (\d{3})?                # group(2) <###>
+                          ( \) )?
+                          (\s | - | \. | \\ | //)?
+                          (\d{3})?                # group(5)
+                          (\s | - | \. | \\ | //)?
+                          (\d{4})?                # group(7)
+                         ''', re.VERBOSE)
+
 def main():
     arg = input('\n"LAST" or "LAST FIRST" to search. "Help" to display commands: ').lower()
-
-    # regex to check for <commands> <arg(s)> or <last> +/- <first> name searches
-    command_regex = re.compile(r'''
-                                (\s*[a-zA-Z]+)          # group(1)  <commands>          or      <lastN>
-                                ((\s*) (,)? (\s*))?     
-                                ([a-zA-Z]+)?            # group(6)  <lastN>             or      <firstN>
-                                ((\s*) (,)? (\s*))?
-                                ([a-zA-Z]+)?            # group(11) <firstN> or None      
-                                ((\s*) (,)? (\s*))?
-
-                                ( \( )?
-                                (\d{3})?                # group(17) <###>
-                                ( \) )?
-                                (\s | - | \.)?
-                                (\d{3})?                # group(20) <###>
-                                (\s | - | \.)?
-                                (\d{4})?                # group(22) <####>
-                               ''', re.VERBOSE | re.IGNORECASE)
-
-    phone_regex = re.compile(r'''
-                              ( \( )?
-                              (\d{3})?                # group(2) <###>
-                              ( \) )?
-                              (\s | - | \. | \\ | //)?
-                              (\d{3})?                # group(5)
-                              (\s | - | \. | \\ | //)?
-                              (\d{4})?                # group(7)
-                             ''', re.VERBOSE)
 
     try:
         command = command_regex.match(arg).group(1).strip(' ')  # <command> <firstN> <lastN2> <fax>
@@ -57,13 +57,14 @@ def main():
         if areacode and phone1 and phone2:
             fax = '1' + areacode + phone1 + phone2
 
-        # if re.search(command, 'add, edit, del, list'):
+
         if command == 'help':
             print('\n---------COMMAND----------------------------------DESCRIPTION------------------')
             print('1. LIST                                  lists ALL entries')
             print('2. ADD  <LASTNAME> [FIRSTNAME] <FAX>     to add entry LASTN/FIRSTN/FAX#')
-            print('3. EDIT <LAST NAME> [FIRSTNAME]          to edit entry LASTN/FIRSTN/FAX#')
-            print('4. DEL  <LAST NAME>                      list entries w/ last name to delete')
+            print('2. MASSADD                               add multiple entries w/o getting main menu')
+            print('3. EDIT <LASTNAME> [FIRSTNAME]           to edit entry LASTN/FIRSTN/FAX#')
+            print('4. DEL  <LASTNAME>                       list entries w/ last name to delete')
             print('5. EXAMPLES                              list examplex of commands')
             main()
         elif command == 'add':
@@ -104,6 +105,9 @@ def main():
         elif command == 'massadd':
             print('Enter: <LAST> <FIRST> <FAX>')
             add_entry('', '', '', True)
+
+        elif command == 'phones':
+            search_phone(command_regex)
             
         elif command == 'edit':
             modify_entry(firstN, lastN2, fax, True)
@@ -115,12 +119,15 @@ def main():
             list_data()
 
         elif command == 'examples':
-            print('------------------------------------EXAMPLES------------------------------------')
+            print('\n------------------------------------EXAMPLES------------------------------------')
             print('command <last> <first>')
             print('<last> & <first> can be any substring length of the name being searched')
-            print('add      | add lin david 1234567890 | add lin 1234567890')
-            print('edit lin | edit l  | edit lin david | edit l d ')
-            print('del lin  | edit l')
+            print('\nFUNCTION__|______________VARIOUS WAYS FOR COMMANDS______________________________')
+            print('search:   | lin, david | lin david | l d | lin d | li da ')
+            print('add:      | add lin david 1234567890 | add lin 1234567890 (10 digit fax w/o \'1\')')
+            print('massadd:  | add lin david 11234567890 (11 digit fax w/ leading \'1\')')
+            print('edit:     | edit lin | edit li  | edit lin david | edit l d ')
+            print('del:      | del lin  | del  l')
 
         elif lastN != None:
             lookup(lastN, firstN)
@@ -159,6 +166,7 @@ def lookup(lastN, firstN=None, add=False):
             else:
                 display_results(search_counter, search_results)
 
+    # Returns to add_entry function to check name exists or not
     if add and not firstN:
         return temp_dict
     elif add:
@@ -172,44 +180,60 @@ def lookup(lastN, firstN=None, add=False):
 
 
 # Takes arguments from lookup function and displays to user based on # of results
-def display_results(result_counter, temp_dict):
+def display_results(result_counter, temp_dict, phones=False):
+    if phones:
+        title = 'phone'
+        column_title = 'PHONE'
+    else:
+        title = 'fax'
+        column_title = 'FAX'
 
     if result_counter == 0:
-        print('No results found for: %s \n' % temp_dict)
+        if phones: print('No results found\n')
+        else: print('No results found for: %s \n' % temp_dict)
+
     elif result_counter == 1:
-        result = '{:>5}, {:>5} {:>13}'.format(temp_dict[1]["last"], temp_dict[1]["first"], temp_dict[1]["fax"]).upper()
-        pyperclip.copy(temp_dict[1]["fax"])
-        print('Found %s result' % result_counter)
-        print('Copied fax number for: %s \n' % result)
+        result = '{:>5}, {:>5} {:>13}'.format(temp_dict[1]["last"], temp_dict[1]["first"], temp_dict[1][title]).upper()
+        if phones: print(result)
+        else:
+            pyperclip.copy(temp_dict[1]["fax"])
+            print('Found %s result \nCopied fax number for: %s\n' % (result_counter, result))
+
     elif result_counter > 1:
-        print('  ', 'LAST'.center(15, '-'), 'FIRST'.center(16, '-'), 'FAX'.center(13, '-'))
-        
-        for i in range(1, result_counter+1):
-            result = '{:>2} {:>15} {:>16} {:>13}'.format(i, temp_dict[i]["last"], temp_dict[i]["first"], temp_dict[i]["fax"]).upper()
+        print('  ', 'LAST'.center(15, '-'), 'FIRST'.center(16, '-'), column_title.center(13, '-'))
+
+        for i in range(1, result_counter + 1):
+            result = '{:>2} {:>15} {:>16} {:>13}'\
+                .format(i, temp_dict[i]["last"], temp_dict[i]["first"], temp_dict[i][title]).upper()
             print(result)
-        print('Found %d results\n' % result_counter)
 
         while True:
             try:
-                num_input = int(input('Enter a number between {}-{} to copy fax number (0 for main menu): '
-                                      .format('1', result_counter)))
-                if result_counter >= num_input and num_input >= 1:
+                num_input = int(input('\nEnter a number between {}-{} for {} number (0 for main menu): '
+                                      .format('1', result_counter, title)))
+                if result_counter >= num_input >= 1:
                     result = '{:>5}, {:>5} {:>13}'\
-                        .format(temp_dict[num_input]["last"], temp_dict[num_input]["first"], temp_dict[num_input]["fax"]).upper()
-                    pyperclip.copy(temp_dict[num_input]["fax"])
-                    print('Copied fax number for: %s \n' % result)
+                        .format(temp_dict[num_input]["last"], temp_dict[num_input]["first"], temp_dict[num_input][title]).upper()
+
+                    if phones: print(result)
+                    else:
+                        pyperclip.copy(temp_dict[num_input]["fax"])
+                        print('Copied fax number for: %s \n' % result)
                     break
                 elif num_input == 0:
                     print()
-                    break
+                    main()
+
             except (ValueError, KeyError):
                 pass
-    main()
+    if phones:
+        search_phone(command_regex)
+    else:
+        main()
 
 
 # Lists all doctors
 def list_data():
-
     try:
         global sorted_data
         sorted_data = sort_alphabet(sorted_data)
@@ -222,10 +246,7 @@ def list_data():
                 for index in range(len(dr)):
                     result_counter += 1
                     temp_dict[result_counter] = dr[index]
-                    if result_counter >= 10:
-                        entry = '{:>3} {:>15} {:>16} {:>13}' \
-                            .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"]).upper()
-                    elif result_counter < 10 :
+                    if result_counter >= 10 or result_counter < 10:
                         entry = '{:>3} {:>15} {:>16} {:>13}' \
                             .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"]).upper()
                     else:
@@ -529,6 +550,17 @@ def modify_entry(last, first=None, fax=None, edit=False):
 
     except (ValueError, UnboundLocalError, NameError):
         main()
+
+
+# TODO NOT WORKING CAUSE REGEX IS IN MAIN FUNC
+def search_phone(command_regex):
+    try:
+        phone_search = input('\nSearch by "LAST" or "LAST FIRST" (Enter for main menu): ')
+        last = command_regex.search(phone_search).group(1)
+        first = command_regex.search(phone_search).group(6)
+        lookup(last, first, False, True)
+    except (ValueError, KeyError, UnboundLocalError, NameError, TypeError):
+        pass
 
 
 # Saves all data to this file
