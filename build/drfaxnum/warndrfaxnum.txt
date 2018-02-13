@@ -13,8 +13,8 @@ missing module named vms_lib - imported by platform, D:\My Documents\Github\Dr_a
 missing module named termios - imported by tty, getpass, D:\My Documents\Github\Dr_autocopyfax\drfaxnum.py
 missing module named grp - imported by shutil, tarfile, D:\My Documents\Github\Dr_autocopyfax\drfaxnum.py
 missing module named pwd - imported by posixpath, shutil, tarfile, http.server, webbrowser, getpass, D:\My Documents\Github\Dr_autocopyfax\drfaxnum.py, netrc
-missing module named 'org.python' - imported by copy, D:\My Documents\Github\Dr_autocopyfax\drfaxnum.py, xml.sax
 missing module named _dummy_threading - imported by dummy_threading, D:\My Documents\Github\Dr_autocopyfax\drfaxnum.py
+missing module named 'org.python' - imported by copy, D:\My Documents\Github\Dr_autocopyfax\drfaxnum.py, xml.sax
 missing module named AppKit - imported by pyperclip
 missing module named Foundation - imported by pyperclip
 missing module named PyQt4 - imported by pyperclip
