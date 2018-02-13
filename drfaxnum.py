@@ -157,7 +157,7 @@ def lookup(lastN, firstN=None, add=False, phones=False):
     # <lastN> <firstN>. Filters first names after last names are filtered
     if firstN:  # None = False, if parameter filled, True otherwise
         for i in range(1, result_counter+1):
-            if firstN in temp_dict[i]["first"]:
+            if firstN[0] in temp_dict[i]["first"][0]:
                 search_counter += 1
                 search_results[search_counter] = temp_dict[i]
         if add and not phones:
