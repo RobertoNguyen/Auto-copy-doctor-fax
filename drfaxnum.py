@@ -64,8 +64,9 @@ def main():
             print('2. ADD  <LASTNAME> [FIRSTNAME] <FAX>     to add entry LASTN/FIRSTN/FAX#')
             print('2. MASSADD                               add multiple entries w/o getting main menu')
             print('3. EDIT <LASTNAME> [FIRSTNAME]           to edit entry LASTN/FIRSTN/FAX#')
-            print('4. DEL  <LASTNAME>                       list entries w/ last name to delete')
-            print('5. EXAMPLES                              list examplex of commands')
+            print('4. DEL  <LASTNAME> [FIRSTNAME]           list entries w/ last name to delete')
+            print('5. PHONES                                search by phone numbers')
+            print('6. EXAMPLES                              list examplex of commands')
             main()
         elif command == 'add':
             # TODO FIX SO CANT ADD 2: LCHC NONE <fax> or etc.
@@ -83,9 +84,10 @@ def main():
             else:  # if not lastN and not firstN and not fax:
 
                 print("\nIf first or last name has 2 parts, make it into 1. e.g. Del Rio = Delrio")
-                last = input("Enter last name:").lower().strip(' ')
-                first = input("Enter first name:").strip(' ')
-                fax = input("Enter 10-digit fax number 1+[###-###-####]:")
+                last = input("Enter last name: ").lower().strip(' ')
+                first = input("Enter first name: ").strip(' ')
+                fax = input("Enter 10-digit fax number 1+[###-###-####]: ")
+                phone = input("Enter phone number: ")
 
                 if first == None or first == '':
                     pass
@@ -93,18 +95,18 @@ def main():
                     first = first.lower()
 
                 if len(fax) < 10:
-                    fax = input("Try again [Must have 10 digits]:")
+                    fax = input("Try again [Fax must have 10 digits]:")
 
                 areacode = phone_regex.search(fax).group(2)
-                phone1 = phone_regex.search(fax).group(5)
-                phone2 = phone_regex.search(fax).group(7)
+                fax1 = phone_regex.search(fax).group(5)
+                fax2 = phone_regex.search(fax).group(7)
 
-                if areacode and phone1 and phone2:
-                    fax = '1' + areacode + phone1 + phone2
-                    add_entry(last, first, fax)
+                if areacode and fax1 and fax2:
+                    fax = '1' + areacode + fax1 + fax2
+                    add_entry(last, first, fax, phone)
         elif command == 'massadd':
-            print('Enter: <LAST> <FIRST> <FAX>')
-            add_entry('', '', '', True)
+            print('Enter: <LAST> <FIRST> <FAX> <PHONE>')
+            add_entry('', '', '', '', True)
 
         elif command == 'phones':
             search_phone(command_regex)
@@ -127,7 +129,7 @@ def main():
             print('add:      | add lin david 1234567890 | add lin 1234567890 (10 digit fax w/o \'1\')')
             print('massadd:  | add lin david 11234567890 (11 digit fax w/ leading \'1\')')
             print('edit:     | edit lin | edit li  | edit lin david | edit l d ')
-            print('del:      | del lin  | del  l')
+            print('del:      | del lin  | del  li da | del l')
 
         elif lastN != None:
             lookup(lastN, firstN)
@@ -137,7 +139,7 @@ def main():
     main()
 
 
-def lookup(lastN, firstN=None, add=False):
+def lookup(lastN, firstN=None, add=False, phones=False):
     #logging.disable(logging.DEBUG)
 
     result_counter, search_counter = 0, 0
@@ -172,6 +174,15 @@ def lookup(lastN, firstN=None, add=False):
     elif add:
         return search_results
 
+    if phones:
+        phone_dict = {}
+        phone_counter = 0
+        for key, entry in temp_dict.items():
+            if 'phone' in entry and len(entry["phone"]) > 8:
+                phone_counter += 1
+                phone_dict[phone_counter] = entry
+        display_results(phone_counter, phone_dict, True)
+
     # <lastN>
     if result_counter == 0:         # No search results
         display_results(result_counter, lastN)
@@ -189,35 +200,41 @@ def display_results(result_counter, temp_dict, phones=False):
         column_title = 'FAX'
 
     if result_counter == 0:
-        if phones: print('No results found\n')
-        else: print('No results found for: %s \n' % temp_dict)
-
+        if phones:
+            print('No results found\n')
+        else:
+            print('No results found for: %s \n' % temp_dict)
     elif result_counter == 1:
         result = '{:>5}, {:>5} {:>13}'.format(temp_dict[1]["last"], temp_dict[1]["first"], temp_dict[1][title]).upper()
-        if phones: print(result)
+
+        if phones:
+            print(result)
         else:
-            pyperclip.copy(temp_dict[1]["fax"])
-            print('Found %s result \nCopied fax number for: %s\n' % (result_counter, result))
+            # pyperclip.copy(temp_dict[1]["fax"])
+            print('Found %s result' % result_counter)
+            print('Copied fax number for: %s \n' % result)
 
     elif result_counter > 1:
         print('  ', 'LAST'.center(15, '-'), 'FIRST'.center(16, '-'), column_title.center(13, '-'))
 
         for i in range(1, result_counter + 1):
-            result = '{:>2} {:>15} {:>16} {:>13}'\
-                .format(i, temp_dict[i]["last"], temp_dict[i]["first"], temp_dict[i][title]).upper()
+            result = '{:>2} {:>15} {:>16} {:>13}'.format(i, temp_dict[i]["last"], temp_dict[i]["first"],
+                                                         temp_dict[i][title]).upper()
             print(result)
 
         while True:
             try:
-                num_input = int(input('\nEnter a number between {}-{} for {} number (0 for main menu): '
-                                      .format('1', result_counter, title)))
-                if result_counter >= num_input >= 1:
-                    result = '{:>5}, {:>5} {:>13}'\
-                        .format(temp_dict[num_input]["last"], temp_dict[num_input]["first"], temp_dict[num_input][title]).upper()
+                num_input = int(input(
+                    '\nEnter a number between {}-{} for {} number (0 for main menu): '.format('1', result_counter,
+                                                                                              title)))
+                if result_counter >= num_input and num_input >= 1:
+                    result = '{:>5}, {:>5} {:>13}'.format(temp_dict[num_input]["last"], temp_dict[num_input]["first"],
+                                                          temp_dict[num_input][title]).upper()
 
-                    if phones: print(result)
+                    if phones:
+                        print(result)
                     else:
-                        pyperclip.copy(temp_dict[num_input]["fax"])
+                        # pyperclip.copy(temp_dict[num_input]["fax"])
                         print('Copied fax number for: %s \n' % result)
                     break
                 elif num_input == 0:
@@ -234,28 +251,31 @@ def display_results(result_counter, temp_dict, phones=False):
 
 # Lists all doctors
 def list_data():
-    try:
-        global sorted_data
-        sorted_data = sort_alphabet(sorted_data)
+    temp_dict = {}
+    result_counter = 0  # resets counter if already been used before in other functions
 
-        temp_dict = {}
-        result_counter = 0  # resets counter if already been used before in other functions
-        for letters in range(len(sorted_data)):
-            if letters % 3 == 0: print('  ', 'LAST'.center(16, '-'), 'FIRST'.center(16, '-'), 'FAX'.center(13, '-'))
-            for dr in sorted_data[letters].values():
-                for index in range(len(dr)):
-                    result_counter += 1
-                    temp_dict[result_counter] = dr[index]
-                    if result_counter >= 10 or result_counter < 10:
-                        entry = '{:>3} {:>15} {:>16} {:>13}' \
-                            .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"]).upper()
-                    else:
-                        entry = '{} {:>14} {:>16} {:>13}' \
-                            .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"]).upper()
-                    print(entry)
-                print()
-    except NameError:
-        main()
+    for letters in range(len(sorted_data)):
+        if letters % 5 == 0: print('  ', 'LAST'.center(16, '-'), 'FIRST'.center(16, '-'), 'FAX'.center(12, '-'),
+                                   'PHONE'.center(15, '-'))
+        for dr in sorted_data[letters].values():
+            for index in range(len(dr)):
+
+                if 'phone' not in dr[index]:
+                    dr[index]['phone'] = ''
+
+                result_counter += 1
+                temp_dict[result_counter] = dr[index]
+
+                if result_counter < 100:
+                    entry = '{:>3} {:>15} {:>16} {:>12} {:>15}' \
+                        .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"],
+                                dr[index]["phone"]).upper()
+                else:
+                    entry = '{} {:>14} {:>16} {:>13} {:>15}' \
+                        .format(result_counter, dr[index]["last"], dr[index]["first"], dr[index]["fax"],
+                                dr[index]["phone"]).upper()
+                print(entry)
+            print()
 
 
 # Sorts data file first before using any of the other functions
@@ -331,31 +351,45 @@ def sort_drs(dictionary, first_name=False):
             pass
 
 
-def add_entry(last=None, first=None, fax=None, massadd=False):
-
+def add_entry(last=None, first=None, fax=None, phone=None, massadd=False):
     def add_person(first):
         lists.append(entry_dict)
         if first == None or first == '':
             first = ''
         else:
             first = first.upper()
-        print("Added person: %s, %s %s" % (last.upper(), first, fax))
+        print("Added person: %s, %s %s %s" % (last.upper(), first, fax, phone))
 
     entry_dict, letter_dict = {}, {}
     entry_list = []
     seenLetter = False
 
-    if last == '' and first == '' and fax == '':
+    if last == '' and first == '' and fax == '' and phone == '':
         arg = input('(Enter to exit) Add: ').lower().split()
 
-        if len(arg) == 3:
+        if arg[-1] == "''":
+            arg[-1] = ''
+        print(arg)
+        if len(arg) == 5:
             last = arg[0]
             first = arg[1]
             fax = arg[2]
-        elif len(arg) == 2:
+            phone = "".join(arg[3:])  # + ' ' + arg[4]
+        elif len(arg) == 4:
             last = arg[0]
-            first = ''
-            fax = arg[1]
+            first = arg[1]
+            fax = arg[2]
+            phone = arg[3]
+        elif len(arg) == 3:  # TODO regex for <last><first><fax> and <last><fax><phone>
+            if arg[-1] == '':
+                last = arg[0]
+                first = ''
+                fax = arg[1]
+                phone = ''
+            # else
+
+    if phone == None or phone == '':
+        phone = ''
 
     if first == None or first == '':
         first = ''
@@ -365,6 +399,7 @@ def add_entry(last=None, first=None, fax=None, massadd=False):
     entry_dict["last"] = last
     entry_dict["first"] = first
     entry_dict["fax"] = fax
+    entry_dict["phone"] = phone
 
     newletter = str(last[0])
     entry_list.append(entry_dict)
@@ -376,7 +411,7 @@ def add_entry(last=None, first=None, fax=None, massadd=False):
         if len(sorted_data) == 0:
             sorted_data.append(letter_dict)
             if first != None: first = first.upper()
-            print("Added person: %s, %s %s" % (last.upper(), first, fax))
+            print("Added person: %s, %s %s %s" % (last.upper(), first, fax, phone))
         else:
             for index in range(len(sorted_data)):
                 for letters, lists in sorted_data[index].items():
@@ -385,12 +420,13 @@ def add_entry(last=None, first=None, fax=None, massadd=False):
 
                         for keys, listed in result_list.items():  # uses lookup function to check if last, first exists
                             if last == listed["last"] and first == listed["first"] and fax == listed["fax"]:
-                                print("Person already exists: %s, %s %s" % (last, first, fax))
+                                print("Person already exists: %s, %s %s %s" % (last, first, fax, phone))
                                 break
                             elif last == listed["last"] and first == listed["first"] and fax != listed[
                                 "fax"] and keys == len(result_list):
 
-                                results = '{}, {}, {} '.format(listed["last"].upper(), listed["first"].upper(), listed["fax"])
+                                results = '{}, {}, {} {}'.format(listed["last"].upper(), listed["first"].upper(),
+                                                                 listed["fax"], listed["phone"])
                                 decision = int(input(
                                     "A different fax # exists for the same person: " + results +
                                     "\n0. Main menu \n1. Replace with new fax # "
@@ -412,41 +448,47 @@ def add_entry(last=None, first=None, fax=None, massadd=False):
                                 if (last != val["last"] or last == val["last"]) and first != val["first"]:
                                     add_person(first)
                                     break
-                    elif not seenLetter and index == len(sorted_data) - 1:  # last[0] does not exist & reached end of index
+                    elif not seenLetter and index == len(
+                            sorted_data) - 1:  # last[0] does not exist & reached end of index
                         sorted_data.append(letter_dict)
                         if first != None: first = first.upper()
-                        print("Added person: %s, %s %s" % (last.upper(), first, fax))
+                        print("Added person: %s, %s %s %s" % (last.upper(), first, fax, phone))
                         break
     except TypeError:
         pass
 
     save(sorted_data)
     if massadd:
-        add_entry('', '', '', True)
+        add_entry('', '', '', '', True)
     else:
         main()
 
 
 def modify_entry(last, first=None, fax=None, edit=False):
     letter_index, entry_index = 0, 0
-    temp_dict = {}          # {1: '2string', 2: '3string', 3: '4string'} extracts into the next 3 variables
-    temp_list = []          # ['string', 'string', 'string']
-    temp_index_list = []    # [2, 3, 4]
-    get_index_dict = {}     # {1: 2, 2: 3, 3: 4}
+    temp_dict = {}  # {1: '2string', 2: '3string', 3: '4string'} extracts into the next 3 variables
+    temp_list = []  # ['string', 'string', 'string']
+    temp_index_list = []  # [2, 3, 4]
+    get_index_dict = {}  # {1: 2, 2: 3, 3: 4}
 
     try:
         for letter in sorted_data:  # gets entire alphabet lettered dictionary: {"a": vals}
             if last[0] in letter:  # gets list of key entries for letter: {last[0]: [{LIST}, {OF}, {VALUES}]}
                 for doctor in letter[last[0]]:  # single entry. {'last': name, 'first': name, 'fax': ##########}
+
+                    if 'phone' not in doctor:
+                        doctor['phone'] = ''
+
                     if first:
                         if last in doctor["last"] and first in doctor["first"]:
-                            result = ('{:>10} {:>11} {:>12}'.format(doctor["last"].upper(), doctor["first"].upper(),
-                                                                    doctor["fax"]))
+                            result = '{:>15} {:>16} {:>13} {:>15}'.format(doctor["last"].upper(),
+                                                                          doctor["first"].upper(),
+                                                                          doctor["fax"], doctor["phone"])
                             temp_index_list.append(entry_index)
                             temp_list.append(result)
                     elif last in doctor["last"]:
-                        result = '{:>15} {:>16} {:>13}'.format(doctor["last"].upper(), doctor["first"].upper(),
-                                                               doctor["fax"])
+                        result = '{:>15} {:>16} {:>13} {:>15}'.format(doctor["last"].upper(), doctor["first"].upper(),
+                                                                      doctor["fax"], doctor["phone"])
                         temp_index_list.append(entry_index)
                         temp_list.append(result)
                     li = letter_index
@@ -459,15 +501,15 @@ def modify_entry(last, first=None, fax=None, edit=False):
         i = 0
         if len(temp_index_list) >= 1:
             print()
-            print(' ', 'LAST'.center(16, '-'), 'FIRST'.center(16, '-'), 'FAX'.center(13, '-'))
+            if len(temp_index_list) > 1:
+                print(' ', 'LAST'.center(16, '-'), 'FIRST'.center(16, '-'), 'FAX'.center(13, '-'),
+                      'PHONE'.center(15, '-'))
 
             while i != len(temp_index_list):
                 for keys in temp_dict.keys():
                     get_index_dict[keys] = temp_index_list[i]
-                    if keys < 10:
+                    if len(temp_index_list) != 1:
                         print('', keys, temp_list[i])
-                    else:
-                        print(keys, temp_list[i])
                     i += 1
 
             if edit:
@@ -482,15 +524,17 @@ def modify_entry(last, first=None, fax=None, edit=False):
                         entry_last = sorted_data[li][last[0]][val]["last"].upper()
                         entry_first = sorted_data[li][last[0]][val]["first"].upper()
                         entry_fax = sorted_data[li][last[0]][val]["fax"]
-                    print(entry_last, entry_first, entry_fax)
+                        entry_phone = sorted_data[li][last[0]][val]["phone"]
 
-                print('\nWhat would you like to edit about: %s, %s %s' % (entry_last, entry_first, entry_fax))
+                print('\nWhat would you like to edit about: %s, %s %s %s' % (
+                entry_last, entry_first, entry_fax, entry_phone))
                 print("0. Main Menu")
                 print("1. Last Name")
                 print("2. First Name")
                 print("3. Fax Number")
-                print("4. All the Above")
-                decision = int(input("Enter a number: "))
+                print("4. Phone Number")
+                print("5. All the Above")
+                decision = int(input("\nEnter a number: "))
 
                 if 4 >= decision >= 0:
                     if decision == 0:
@@ -508,19 +552,25 @@ def modify_entry(last, first=None, fax=None, edit=False):
                         sorted_data[li][last[0]][temp_index]["fax"] = entry_fax
                         save(sorted_data)
                     elif decision == 4:
+                        entry_phone = input("What would you like to change phone number %s to?: " % entry_phone)
+                        sorted_data[li][last[0]][temp_index]["phone"] = entry_phone
+                        save(sorted_data)
+                    elif decision == 5:
                         entry_last = input("What would you like to change last name %s to?: " % entry_last)
                         entry_first = input("What would you like to change first name %s to?: " % entry_first)
                         entry_fax = input("What would you like to change fax number %s to?: " % entry_fax)
+                        entry_phone = input("What would you like to change phone number %s to?: " % entry_phone)
 
                         if entry_last[0] != last[0]:
                             del sorted_data[li][last[0]][temp_index]
                             if (entry_last != None or entry_last != '') and (entry_fax != None or entry_fax != '') \
-                                and len(entry_fax) == 10:
-                                add_entry(entry_last, entry_first, entry_fax)
+                                    and len(entry_fax) == 10:
+                                add_entry(entry_last, entry_first, entry_fax, entry_phone)
                         elif entry_last[0] == last[0]:
                             sorted_data[li][last[0]][temp_index]["last"] = entry_last.lower()
                             sorted_data[li][last[0]][temp_index]["first"] = entry_first.lower()
                             sorted_data[li][last[0]][temp_index]["fax"] = '1' + entry_fax
+                            sorted_data[li][last[0]][temp_index]["phone"] = entry_phone
                             save(sorted_data)
             elif not edit:
                 dec = int(input("Enter a number to delete entry: "))
@@ -549,7 +599,8 @@ def modify_entry(last, first=None, fax=None, edit=False):
             save(sorted_data)
 
     except (ValueError, UnboundLocalError, NameError):
-        main()
+        pass
+    main()
 
 
 # TODO NOT WORKING CAUSE REGEX IS IN MAIN FUNC
