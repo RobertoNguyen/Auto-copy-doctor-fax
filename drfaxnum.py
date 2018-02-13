@@ -216,7 +216,7 @@ def display_results(result_counter, temp_dict, phones=False):
         if phones:
             print(result)
         else:
-            # pyperclip.copy(temp_dict[1]["fax"])
+            pyperclip.copy(temp_dict[1]["fax"])
             print('Found %s result' % result_counter)
             print('Copied fax number for: %s \n' % result)
 
@@ -228,7 +228,6 @@ def display_results(result_counter, temp_dict, phones=False):
                                                          temp_dict[i][title]).upper()
             print(result)
 
-    #while True:
         try:
             num_input = int(input(
                 '\nEnter a number between {}-{} for {} number (0 for main menu/Enter to search again): '
@@ -240,9 +239,8 @@ def display_results(result_counter, temp_dict, phones=False):
                 if phones:
                     print(result)
                 else:
-                    # pyperclip.copy(temp_dict[num_input]["fax"])
+                    pyperclip.copy(temp_dict[num_input]["fax"])
                     print('Copied fax number for: %s \n' % result)
-                #break
             elif num_input == 0:
                 print()
                 main()
