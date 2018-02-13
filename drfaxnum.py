@@ -160,9 +160,9 @@ def lookup(lastN, firstN=None, add=False, phones=False):
             if firstN in temp_dict[i]["first"]:
                 search_counter += 1
                 search_results[search_counter] = temp_dict[i]
-        if add:
+        if add and not phones:
             return search_results
-        else:
+        elif not phones:
             if search_counter == 0:     # No search results
                 display_results(search_counter, '%s, %s' % (lastN, firstN))
             else:
@@ -177,10 +177,16 @@ def lookup(lastN, firstN=None, add=False, phones=False):
     if phones:
         phone_dict = {}
         phone_counter = 0
-        for key, entry in temp_dict.items():
+        if firstN:
+            nameList = search_results
+        else:
+            nameList = temp_dict
+
+        for key, entry in nameList.items():
             if 'phone' in entry and len(entry["phone"]) > 8:
                 phone_counter += 1
                 phone_dict[phone_counter] = entry
+
         display_results(phone_counter, phone_dict, True)
 
     # <lastN>
@@ -222,27 +228,27 @@ def display_results(result_counter, temp_dict, phones=False):
                                                          temp_dict[i][title]).upper()
             print(result)
 
-        while True:
-            try:
-                num_input = int(input(
-                    '\nEnter a number between {}-{} for {} number (0 for main menu): '.format('1', result_counter,
-                                                                                              title)))
-                if result_counter >= num_input and num_input >= 1:
-                    result = '{:>5}, {:>5} {:>13}'.format(temp_dict[num_input]["last"], temp_dict[num_input]["first"],
-                                                          temp_dict[num_input][title]).upper()
+    #while True:
+        try:
+            num_input = int(input(
+                '\nEnter a number between {}-{} for {} number (0 for main menu/Enter to search again): '
+                    .format('1', result_counter, title)))
+            if result_counter >= num_input and num_input >= 1:
+                result = '{:>5}, {:>5} {:>13}'.format(temp_dict[num_input]["last"], temp_dict[num_input]["first"],
+                                                      temp_dict[num_input][title]).upper()
 
-                    if phones:
-                        print(result)
-                    else:
-                        # pyperclip.copy(temp_dict[num_input]["fax"])
-                        print('Copied fax number for: %s \n' % result)
-                    break
-                elif num_input == 0:
-                    print()
-                    main()
+                if phones:
+                    print(result)
+                else:
+                    # pyperclip.copy(temp_dict[num_input]["fax"])
+                    print('Copied fax number for: %s \n' % result)
+                #break
+            elif num_input == 0:
+                print()
+                main()
 
-            except (ValueError, KeyError):
-                pass
+        except (ValueError, KeyError):
+            pass
     if phones:
         search_phone(command_regex)
     else:
@@ -535,8 +541,9 @@ def modify_entry(last, first=None, fax=None, edit=False):
                 print("4. Phone Number")
                 print("5. All the Above")
                 decision = int(input("\nEnter a number: "))
+                print(decision)
 
-                if 4 >= decision >= 0:
+                if 5 >= decision >= 0:
                     if decision == 0:
                         main()
                     if decision == 1:
@@ -609,7 +616,11 @@ def search_phone(command_regex):
         phone_search = input('\nSearch by "LAST" or "LAST FIRST" (Enter for main menu): ')
         last = command_regex.search(phone_search).group(1)
         first = command_regex.search(phone_search).group(6)
-        lookup(last, first, False, True)
+        if last == 'list':
+            list_data()
+            search_phone(command_regex)
+        else:
+            lookup(last, first, False, True)
     except (ValueError, KeyError, UnboundLocalError, NameError, TypeError):
         pass
 
