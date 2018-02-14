@@ -5,8 +5,8 @@
    'D:\\My '
    'Documents\\Github\\Dr_autocopyfax\\build\\drfaxnum\\drfaxnum.exe.manifest',
    'BINARY'),
-  ('VCRUNTIME140.dll', 'c:\\python36\\VCRUNTIME140.dll', 'BINARY'),
   ('python36.dll', 'c:\\python36\\python36.dll', 'BINARY'),
+  ('VCRUNTIME140.dll', 'c:\\python36\\VCRUNTIME140.dll', 'BINARY'),
   ('_ssl', 'c:\\python36\\DLLs\\_ssl.pyd', 'EXTENSION'),
   ('unicodedata', 'c:\\python36\\DLLs\\unicodedata.pyd', 'EXTENSION'),
   ('pyexpat', 'c:\\python36\\DLLs\\pyexpat.pyd', 'EXTENSION'),
